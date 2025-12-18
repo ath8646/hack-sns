@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hacker's Community</title>
+    <title>Secure Community</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -14,6 +14,10 @@
 
         .navbar {
             background: #343a40;
+        }
+
+        .navbar-brand {
+            font-size: 1.2rem;
         }
 
         .list-group-item {
@@ -29,29 +33,55 @@
 
         .write-btn {
             position: fixed;
-            bottom: 30px;
-            right: 30px;
+            bottom: 20px;
+            right: 20px;
             border-radius: 50%;
             width: 60px;
             height: 60px;
             font-size: 24px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+        }
+
+        .post-img-preview {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #eee;
         }
     </style>
 </head>
 
 <body>
 
-    <nav class="navbar navbar-dark mb-4 px-3">
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4 px-3">
         <div class="container">
             <a class="navbar-brand fw-bold" href="/"><i class="fas fa-shield-alt"></i> Secure Community</a>
-            <div class="text-white">
-                {% if session.get('user_id') %}
-                <span><i class="fas fa-user"></i> {{ session.get('username') }}</span>
-                <a href="/logout" class="btn btn-outline-light btn-sm ms-2">로그아웃</a>
-                {% else %}
-                <a href="/login" class="btn btn-outline-light btn-sm">로그인</a>
-                {% endif %}
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <div class="navbar-nav align-items-center mt-3 mt-lg-0 gap-2">
+                    {% if session.get('is_admin') %}
+                    <a href="/admin" class="btn btn-warning btn-sm fw-bold w-100 w-lg-auto text-nowrap"><i
+                            class="fas fa-cogs"></i> 관리자 페이지</a>
+                    {% endif %}
+
+                    {% if session.get('username') %}
+                    <span class="text-white me-2 d-none d-lg-inline text-nowrap"><i class="fas fa-user"></i> {{
+                        session.get('username') }}</span>
+                    <a href="/settings" class="btn btn-outline-light btn-sm w-100 w-lg-auto text-nowrap"><i
+                            class="fas fa-cog"></i> 설정</a>
+                    <a href="/logout" class="btn btn-outline-danger btn-sm w-100 w-lg-auto text-nowrap">로그아웃</a>
+                    {% else %}
+                    <a href="/login" class="btn btn-light btn-sm fw-bold w-100 w-lg-auto text-nowrap">로그인</a>
+                    <a href="/register" class="btn btn-outline-light btn-sm w-100 w-lg-auto text-nowrap">회원가입</a>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </nav>
@@ -63,14 +93,41 @@
 
                 <div class="list-group shadow-sm">
                     {% for post in posts %}
-                    <a href="/post/{{ post.id }}" class="list-group-item list-group-item-action p-3">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h5 class="mb-1 text-primary fw-bold">{{ post.title }}</h5>
-                            <small class="text-muted">{{ post.created_at[:10] }}</small>
+                    <div class="list-group-item list-group-item-action p-3">
+                        <div class="d-flex flex-column">
+
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <a href="/post/{{ post.id }}" class="text-decoration-none w-100 me-3">
+                                    <h5 class="mb-1 text-primary fw-bold">{{ post.title }}</h5>
+                                    <p class="mb-1 text-secondary text-truncate">{{ post.content }}</p>
+                                </a>
+
+                                {% if session.get('user_id') == post.author_id or session.get('is_admin') %}
+                                <div class="d-flex gap-1">
+                                    <a href="/edit/{{ post.id }}" class="btn btn-sm btn-outline-secondary text-nowrap">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger text-nowrap"
+                                        data-bs-toggle="modal" data-bs-target="#deleteModal{{ post.id }}">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            {% if post.image_url %}
+                            <a href="/post/{{ post.id }}">
+                                <img src="{{ post.image_url }}" class="post-img-preview" alt="게시물 이미지">
+                            </a>
+                            {% endif %}
+
+                            <div class="small text-muted text-end">
+                                <i class="fas fa-user-circle"></i> {{ post.users.username }} · 
+                                {{ post.created_at[:10] }} · 
+                                <i class="fas fa-eye ms-1"></i> {{ post.view_count }}
+                            </div>
                         </div>
-                        <p class="mb-1 text-secondary text-truncate">{{ post.content }}</p>
-                        <small class="text-muted"><i class="fas fa-user-circle"></i> {{ post.users.username }}</small>
-                    </a>
+                    </div>
                     {% else %}
                     <div class="text-center p-5 text-muted">
                         <p>아직 작성된 글이 없습니다.</p>
@@ -81,6 +138,28 @@
             </div>
         </div>
     </div>
+
+    {% for post in posts %}
+    <div class="modal fade" id="deleteModal{{ post.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-exclamation-triangle"></i> 삭제 확인</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <p class="fs-5 mb-2">정말로 이 게시물을 삭제하시겠습니까?</p>
+                    <p class="text-secondary small mb-0">삭제된 게시물은 복구할 수 없습니다.</p>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <a href="/delete/{{ post.id }}" class="btn btn-danger fw-bold">네, 삭제합니다</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
 
     {% if session.get('user_id') %}
     <button class="btn btn-primary write-btn" data-bs-toggle="modal" data-bs-target="#writeModal">
@@ -94,10 +173,14 @@
                     <h5 class="modal-title">새 글 작성</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form action="/write" method="POST">
+                <form action="/write" method="POST" enctype="multipart/form-data">
                     <div class="modal-body">
                         <input type="text" name="title" class="form-control mb-2" placeholder="제목" required>
-                        <textarea name="content" class="form-control" rows="5" placeholder="내용" required></textarea>
+                        <textarea name="content" class="form-control mb-3" rows="5" placeholder="내용"
+                            required></textarea>
+
+                        <label class="form-label small text-muted">이미지 첨부 (선택)</label>
+                        <input type="file" name="file" class="form-control" accept="image/*">
                     </div>
                     <div class="modal-footer">
                         <button type="submit" class="btn btn-primary">등록</button>

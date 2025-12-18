@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <title>내 정보 설정</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <a href="/" class="text-decoration-none mb-3 d-inline-block">&larr; 메인으로</a>
+
+                <div class="card shadow">
+                    <div class="card-header bg-dark text-white fw-bold">
+                        🔒 비밀번호 변경
+                    </div>
+                    <div class="card-body">
+                        {% if msg %}
+                        <div class="alert {% if '❌' in msg %}alert-danger{% else %}alert-success{% endif %}">
+                            {{ msg }}
+                        </div>
+                        {% endif %}
+
+                        <form method="POST">
+                            <div class="mb-3">
+                                <label class="form-label">현재 비밀번호</label>
+                                <input type="password" name="current_password" class="form-control" required>
+                            </div>
+                            <hr>
+                            <div class="mb-3">
+                                <label class="form-label">새로운 비밀번호</label>
+                                <input type="password" name="new_password" class="form-control" placeholder="특수문자 포함"
+                                    required>
+                            </div>
+                            <button class="btn btn-primary w-100">비밀번호 변경하기</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

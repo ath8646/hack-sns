@@ -22,27 +22,67 @@
             border: none;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
         }
+
+        .error-msg {
+            font-size: 0.85rem;
+            margin-top: 5px;
+            display: block;
+        }
     </style>
 </head>
 
 <body>
     <div class="card register-card bg-white">
         <h3 class="text-center mb-4 fw-bold text-success">회원가입</h3>
+
         <form method="POST">
             <div class="mb-3">
                 <label class="form-label text-muted small">사용할 아이디</label>
-                <input type="text" name="username" class="form-control" required>
+                <input type="text" name="username" class="form-control" placeholder="아이디 입력"
+                    value="{{ username or '' }}" required>
+
+                {% if username_error %}
+                <span class="error-msg text-danger fw-bold">{{ username_error }}</span>
+                {% endif %}
             </div>
+
             <div class="mb-4">
                 <label class="form-label text-muted small">비밀번호</label>
-                <input type="password" name="password" class="form-control" required>
+                <input type="password" id="passwordInput" name="password" class="form-control" placeholder="비밀번호 입력"
+                    required oninput="checkPassword()">
+
+                {% if password_error %}
+                <span id="pwMsg" class="error-msg text-danger">{{ password_error }}</span>
+                {% else %}
+                <span id="pwMsg" class="error-msg text-danger">* 특수문자(!@# 등) 하나 이상 포함 필수</span>
+                {% endif %}
             </div>
+
             <button class="btn btn-success w-100 py-2">가입하기</button>
         </form>
         <div class="text-center mt-3">
             <a href="/login" class="text-decoration-none small">이미 계정이 있나요? 로그인</a>
         </div>
     </div>
+
+    <script>
+        function checkPassword() {
+            const pw = document.getElementById('passwordInput').value;
+            const msg = document.getElementById('pwMsg');
+
+            // 특수문자 체크 정규식
+            const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(pw);
+
+            if (hasSpecialChar) {
+                msg.className = 'error-msg text-muted'; // 회색으로 변경
+                msg.innerText = "✔ 특수문자 조건 충족됨";
+            } else {
+                msg.className = 'error-msg text-danger'; // 빨간색 유지
+                msg.innerText = "* 특수문자(!@# 등) 하나 이상 포함 필수";
+            }
+        }
+    </script>
+
 </body>
 
-</html>
+</html> 
