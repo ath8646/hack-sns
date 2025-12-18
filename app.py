@@ -292,7 +292,7 @@ def delete(post_id):
     post = supabase.table("posts").select("*").eq("id", post_id).execute().data[0]
     if post['author_id'] == session['user_id'] or session.get('is_admin'):
         supabase.table("posts").delete().eq("id", post_id).execute()
-    if session.get('is_admin'): return redirect(url_for('admin_list'))
+    if session.get('is_admin'): return redirect(url_for('index'))
     return redirect(url_for('index'))
 
 # ===========================
