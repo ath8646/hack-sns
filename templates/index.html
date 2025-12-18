@@ -14,6 +14,54 @@
     />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+      /* 가이드 문구 기본 스타일 및 애니메이션 설정 */
+      .guide-text {
+        font-size: 0.5rem;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 4px 10px;
+        border-radius: 20px;
+        border: 1px dashed rgba(255, 255, 255, 0.5);
+        font-weight: bold;
+        color: #fffae3 !important;
+        transition: all 0.4s ease; /* 부드럽게 사라지기 위한 설정 */
+        opacity: 1;
+        transform: translateX(0);
+      }
+
+      /* 메뉴가 열렸을 때 적용될 클래스 (빨려 들어가는 효과) */
+      .guide-hidden {
+        opacity: 0 !important;
+        transform: translateX(20px) scale(0.8); /* 오른쪽으로 밀리며 작아짐 */
+        pointer-events: none;
+      }
+
+      @keyframes bounce-x {
+        0%,
+        100% {
+          transform: translateX(0);
+        }
+        50% {
+          transform: translateX(7px);
+        }
+      }
+      .animate-bounce {
+        animation: bounce-x 0.8s infinite;
+      }
+
+      /* 화살표 통통 튀는 애니메이션 */
+      @keyframes bounce-x {
+        0%,
+        100% {
+          transform: translateX(0);
+        }
+        50% {
+          transform: translateX(7px);
+        }
+      }
+
+      .animate-bounce {
+        animation: bounce-x 0.8s infinite;
+      }
       body {
         background-color: #f8f9fa;
       }
@@ -182,6 +230,16 @@
         <a class="navbar-brand fw-bold" href="/"
           ><i class="fas fa-shield-alt"></i> Secure Community</a
         >
+        {% if not session.get('username') %}
+        <div
+          id="join-guide"
+          class="d-lg-none text-white guide-text animate-bounce"
+          style="position: absolute; right: 90px; top: 18px; z-index: 10"
+        >
+          가입 해주세요! <i class="fas fa-arrow-right"></i>
+        </div>
+        {% endif %}
+
         <button
           class="navbar-toggler"
           type="button"
@@ -199,14 +257,19 @@
               href="/admin"
               class="btn btn-warning btn-sm fw-bold w-100 w-lg-auto text-nowrap"
               ><i class="fas fa-cogs"></i> 관리자 페이지</a
-            >{% endif %} {% if session.get('username') %}
+            >{% endif %}{% if session.get('username') %}
             <span class="text-white fw-bold me-2 mb-2 mb-lg-0 text-nowrap">
               <i class="fas fa-user"></i> {{ session.get('username') }} {% if
-              session.get('is_admin') %}<span
+              session.get('is_admin') %}
+              <span class="grade-badge" data-grade="관리자">관리자</span>
+              {% else %}
+              <span
                 class="grade-badge"
-                data-grade="관리자"
-                >관리자</span
-              >{% endif %}
+                data-grade="{{ session.get('grade') or '일반 회원' }}"
+              >
+                {{ session.get('grade') or '일반 회원' }}
+              </span>
+              {% endif %}
             </span>
             <a
               href="/settings"
@@ -295,15 +358,26 @@
                   </a>
                   {% if session.get('user_id') == post.author_id or
                   session.get('is_admin') %}
-                  <div class="d-flex gap-1">
+                  <div
+                    class="d-flex gap-1"
+                    style="
+                      position: absolute;
+                      top: 12px;
+                      right: 6px;
+                      z-index: 10;
+                    "
+                  >
                     <a
                       href="/edit/{{ post.id }}"
-                      class="btn btn-sm btn-outline-secondary text-nowrap"
-                      ><i class="fas fa-edit"></i
-                    ></a>
+                      class="btn btn-sm btn-outline-secondary shadow-sm"
+                      style="background: white"
+                    >
+                      <i class="fas fa-edit"></i>
+                    </a>
                     <button
                       type="button"
-                      class="btn btn-sm btn-outline-danger text-nowrap"
+                      class="btn btn-sm btn-outline-danger shadow-sm"
+                      style="background: white"
                       data-bs-toggle="modal"
                       data-bs-target="#deleteModal{{ post.id }}"
                     >
@@ -368,7 +442,11 @@
               data-bs-dismiss="modal"
             ></button>
           </div>
-          <form action="/notice/write" method="POST">
+          <form
+            action="/notice/write"
+            method="POST"
+            onsubmit="disableButton(this)"
+          >
             <div class="modal-body">
               <input
                 type="text"
@@ -519,7 +597,12 @@
             <h5 class="modal-title">새 글 작성</h5>
             <button class="btn-close" data-bs-dismiss="modal"></button>
           </div>
-          <form action="/write" method="POST" enctype="multipart/form-data">
+          <form
+            action="/write"
+            method="POST"
+            enctype="multipart/form-data"
+            onsubmit="disableButton(this)"
+          >
             <div class="modal-body">
               <input
                 type="text"
@@ -621,6 +704,31 @@
         } catch (err) {
           console.error("Update failed:", err);
         }
+      }
+      // 등록 버튼 중복 클릭 방지 함수
+      function disableButton(form) {
+        // 폼 안에 있는 전송(submit) 버튼을 찾습니다.
+        const btn = form.querySelector('button[type="submit"]');
+
+        // 버튼을 클릭 불가능하게 만들고 글자를 바꿉니다.
+        btn.disabled = true;
+        btn.innerHTML =
+          '<span class="spinner-border spinner-border-sm"></span> 등록 중...';
+      }
+      // 메뉴(Navbar) 상태에 따른 가이드 문구 제어
+      const navbarToggle = document.getElementById("navbarNav");
+      const joinGuide = document.getElementById("join-guide");
+
+      if (navbarToggle && joinGuide) {
+        // 메뉴가 열리기 시작할 때
+        navbarToggle.addEventListener("show.bs.collapse", function () {
+          joinGuide.classList.add("guide-hidden");
+        });
+
+        // 메뉴가 완전히 닫혔을 때 다시 나타남
+        navbarToggle.addEventListener("hidden.bs.collapse", function () {
+          joinGuide.classList.remove("guide-hidden");
+        });
       }
     </script>
   </body>

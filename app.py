@@ -200,15 +200,30 @@ def write():
 def login():
     if request.method == 'POST':
         username = request.form['username']; password = request.form['password']
+        
+        # 1. 슈퍼 관리자 처리 (아이디가 ADMIN일 때)
         if username == 'ADMIN' and password == 'testpassword':
-            session['user_id'] = 0; session['username'] = '관리자(ADMIN)'; session['is_admin'] = True
+            session['user_id'] = 0
+            session['username'] = '관리자(ADMIN)'
+            session['is_admin'] = True
+            session['grade'] = '관리자' # ✅ 추가: 슈퍼 관리자 등급 강제 지정
             return redirect(url_for('admin_list'))
+            
+        # 2. 일반 유저 및 관리자 유저 처리
         res = supabase.table("users").select("*").eq("username", username).execute()
+        
         if res.data and check_password_hash(res.data[0]['password'], password):
             user = res.data[0]
-            session['user_id'] = user['id']; session['username'] = user['username']; session['is_admin'] = user.get('is_admin', False)
+            session['user_id'] = user['id']
+            session['username'] = user['username']
+            session['is_admin'] = user.get('is_admin', False)
+            
+            # ✅ 이 부분을 아래 코드로 교체하세요 (등급 정보 가져오기)
+            session['grade'] = user.get('grade') if user.get('grade') else '일반 회원'
+            
             return redirect(url_for('index'))
-        else: return render_template('login.html', error="아이디 또는 비밀번호 오류")
+        else: 
+            return render_template('login.html', error="아이디 또는 비밀번호 오류")
     return render_template('login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -216,16 +231,22 @@ def register():
     username_error = None; password_error = None
     if request.method == 'POST':
         username = request.form['username']; password = request.form['password']
-        if not re.match(r'^[a-zA-Z가-힣]+$', username):
-            username_error = "아이디는 영어와 한글만 가능합니다!"
+        
+        # 정규표현식 수정: a-z, A-Z, 가-힣 에 0-9(숫자)를 추가함
+        if not re.match(r'^[a-zA-Z가-힣0-9]+$', username):
+            username_error = "아이디는 영어, 한글, 숫자만 가능합니다!"
             return render_template('register.html', username_error=username_error, password_error=password_error, username=username)
+            
         if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
             password_error = "특수문자 필수!"
             return render_template('register.html', username_error=username_error, password_error=password_error, username=username)
+        
         try:
             supabase.table("users").insert({"username": username, "password": generate_password_hash(password)}).execute()
             return redirect(url_for('login'))
-        except: username_error = "이미 사용 중인 아이디입니다."
+        except: 
+            username_error = "이미 사용 중인 아이디입니다."
+            
     return render_template('register.html', username_error=username_error, password_error=password_error)
 
 @app.route('/logout')
