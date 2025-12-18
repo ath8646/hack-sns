@@ -287,5 +287,34 @@
         else document.getElementById("gameOverScreen").classList.remove("hidden");
     }
 </script>
+<script>
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    canvas.addEventListener("touchstart", (e) => {
+        if (!isRunning) return;
+        const t = e.touches[0];
+        touchStartX = t.clientX;
+        touchStartY = t.clientY;
+    }, { passive: true });
+
+    canvas.addEventListener("touchend", (e) => {
+        if (!isRunning) return;
+        const t = e.changedTouches[0];
+        const dx = t.clientX - touchStartX;
+        const dy = t.clientY - touchStartY;
+
+        // 최소 스와이프 거리 (오작동 방지)
+        if (Math.abs(dx) < 20 && Math.abs(dy) < 20) return;
+
+        if (Math.abs(dx) > Math.abs(dy)) {
+            if (dx > 0) inputQueue.push('RIGHT');
+            else inputQueue.push('LEFT');
+        } else {
+            if (dy > 0) inputQueue.push('DOWN');
+            else inputQueue.push('UP');
+        }
+    }, { passive: true });
+</script>
 </body>
 </html>

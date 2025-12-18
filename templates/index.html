@@ -213,12 +213,14 @@
               class="btn btn-outline-light btn-sm w-100 w-lg-auto text-nowrap"
               ><i class="fas fa-cog"></i> 설정</a
             >
-            <a
-              href="/logout"
+            <button
+              type="button"
               class="btn btn-outline-danger btn-sm w-100 w-lg-auto text-nowrap"
-              onclick="return confirm('정말로 로그아웃 하시겠습니까?')"
-              >로그아웃</a
+              data-bs-toggle="modal"
+              data-bs-target="#logoutModal"
             >
+              로그아웃
+            </button>
             {% else %}
             <a
               href="/login"
@@ -393,8 +395,6 @@
           <i class="fas fa-gamepad"></i> 🐍 지렁이 게임하기
         </a>
       </div>
-
-      <p>Secure Community © 2025</p>
       <button
         class="btn btn-link btn-sm text-decoration-none text-muted opacity-75"
         data-bs-toggle="modal"
@@ -403,6 +403,7 @@
         <i class="fas fa-ice-cream text-danger"></i> 개발자에게 달콤한
         아이스크림 사주기
       </button>
+      <p>Secure Community © 2025</p>
     </footer>
 
     <div class="modal fade" id="donationModal" tabindex="-1">
@@ -476,7 +477,35 @@
         </div>
       </div>
     </div>
-    {% endfor %} {% if session.get('user_id') %}<button
+    {% endfor %}
+    <div class="modal fade" id="logoutModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title">로그아웃 확인</h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body text-center py-4">
+            <p class="fs-5 mb-0">정말로 로그아웃 하시겠습니까?</p>
+          </div>
+          <div class="modal-footer justify-content-center">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              취소
+            </button>
+            <a href="/logout" class="btn btn-danger fw-bold">로그아웃</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% if session.get('user_id') %}<button
       class="btn btn-primary write-btn"
       data-bs-toggle="modal"
       data-bs-target="#writeModal"
