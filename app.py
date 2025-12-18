@@ -219,7 +219,7 @@ def login():
             session['is_admin'] = user.get('is_admin', False)
             
             # ✅ 이 부분을 아래 코드로 교체하세요 (등급 정보 가져오기)
-            session['grade'] = user.get('grade') if user.get('grade') else '일반 회원'
+            session['grade'] = user.get('grade') if user.get('grade') else '일반'
             
             return redirect(url_for('index'))
         else: 
