@@ -5,8 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hacker's Community</title>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <style>
         body {
             background-color: #f8f9fa;
@@ -51,6 +54,15 @@
             margin-bottom: 15px;
             border: 1px solid #eee;
         }
+
+        /* 계좌번호 박스 스타일 */
+        .account-box {
+            background: #f1f3f5;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 1.1rem;
+        }
     </style>
 </head>
 
@@ -69,7 +81,7 @@
                             class="fas fa-cogs"></i> 관리자 페이지</a>
                     {% endif %}
                     {% if session.get('username') %}
-                    <span class="text-white me-2 d-none d-lg-inline text-nowrap"><i class="fas fa-user"></i> {{
+                    <span class="text-white fw-bold me-2 mb-2 mb-lg-0 text-nowrap"><i class="fas fa-user"></i> {{
                         session.get('username') }}</span>
                     <a href="/settings" class="btn btn-outline-light btn-sm w-100 w-lg-auto text-nowrap"><i
                             class="fas fa-cog"></i> 설정</a>
@@ -83,11 +95,12 @@
         </div>
     </nav>
 
-    <div class="container">
+    <div class="container" style="min-height: 80vh;">
         <div class="row">
             <div class="col-md-8 mx-auto">
                 <h4 class="mb-3 fw-bold border-bottom pb-2">📋 자유게시판</h4>
-                <div class="list-group shadow-sm">
+
+                <div id="post-list" class="list-group shadow-sm">
                     {% for post in posts %}
                     <div class="list-group-item list-group-item-action p-3">
                         <div class="d-flex flex-column">
@@ -121,8 +134,10 @@
                             {% endif %}
 
                             <div class="small text-muted text-end">
-                                <i class="fas fa-user-circle"></i> {{ post.users.username }} · {{ post.created_at[:10]
-                                }} · <i class="fas fa-eye ms-1"></i> {{ post.view_count }}
+                                <i class="fas fa-user-circle"></i> {{ post.users.username }} ·
+                                <span class="time-ago" data-date="{{ post.created_at }}">{{ post.created_at[:10]
+                                    }}</span> ·
+                                <i class="fas fa-eye ms-1"></i> {{ post.view_count }}
                             </div>
                         </div>
                     </div>
@@ -131,6 +146,38 @@
                         <p>아직 작성된 글이 없습니다.</p>
                     </div>
                     {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center mt-5 mb-4 text-muted small">
+        <p>Secure Community © 2025</p>
+        <button type="button" class="btn btn-link btn-sm text-decoration-none text-muted opacity-50"
+            data-bs-toggle="modal" data-bs-target="#donationModal">
+            <i class="fas fa-ice-cream"></i> 개발자에게 아이스크림 사주기
+        </button>
+    </footer>
+
+    <div class="modal fade" id="donationModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center pt-0 pb-4">
+                    <i class="fas fa-ice-cream text-primary mb-3" style="font-size: 3rem;"></i>
+                    <h5 class="fw-bold mb-3">개발자 기분 좋게하기</h5>
+                    <p class="text-muted mb-4">아 뭐 이런거 안주셔도 되는데<br>주신다면 어쩔 수 없죠 😋<br>500원만..</p>
+
+                    <div class="mb-2 fw-bold">제작자: ATH</div>
+                    <div class="account-box text-dark mb-4 user-select-all">
+                        토스뱅크<br>1908-8089-3265
+                    </div>
+
+                    <button type="button" class="btn btn-secondary w-100 fw-bold py-2" data-bs-dismiss="modal">
+                        돌아가기
+                    </button>
                 </div>
             </div>
         </div>
@@ -181,7 +228,60 @@
         </div>
     </div>
     {% endif %}
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const SUPABASE_URL = "https://porctgadcosjzgpkxiqw.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvcmN0Z2FkY29zanpncGt4aXF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwMzc4MjYsImV4cCI6MjA4MTYxMzgyNn0.QmB0BnyLAYY0Rt3-fffExHQt4BGgWWr7USc5V9qbA2c";
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        function updateTimeAgo() {
+            const els = document.querySelectorAll('.time-ago');
+            const now = new Date();
+
+            els.forEach(el => {
+                const dateStr = el.getAttribute('data-date');
+                if (!dateStr) return;
+
+                const past = new Date(dateStr);
+                const diffMs = now - past;
+                const diffMin = Math.floor(diffMs / (1000 * 60));
+                const diffHour = Math.floor(diffMs / (1000 * 60 * 60));
+                const diffDay = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+                if (diffMin < 1) el.innerText = "방금 전";
+                else if (diffMin < 60) el.innerText = diffMin + "분 전";
+                else if (diffHour < 24) el.innerText = diffHour + "시간 전";
+                else el.innerText = diffDay + "일 전";
+            });
+        }
+        updateTimeAgo();
+
+        const channel = _supabase
+            .channel('index-updates')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, (payload) => {
+                console.log('게시판 변경 감지!', payload);
+                refreshPostList();
+            })
+            .subscribe();
+
+        async function refreshPostList() {
+            try {
+                const response = await fetch(window.location.href + '?t=' + Date.now());
+                const text = await response.text();
+                const parser = new DOMParser();
+                const newDoc = parser.parseFromString(text, 'text/html');
+
+                document.getElementById('post-list').innerHTML = newDoc.getElementById('post-list').innerHTML;
+                updateTimeAgo();
+
+            } catch (err) {
+                console.error('Update failed:', err);
+            }
+        }
+    </script>
+
 </body>
 
 </html>

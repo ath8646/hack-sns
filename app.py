@@ -36,19 +36,25 @@ def index():
 # ===========================
 # [글 상세 보기 (조회수 & 좋아요)]
 # ===========================
+# app.py 의 post_detail 함수 부분
+
 @app.route('/post/<int:post_id>')
 def post_detail(post_id):
     post_res = supabase.table("posts").select("*, users(username)").eq("id", post_id).execute()
     if not post_res.data: return "글이 삭제되었거나 없습니다."
     post = post_res.data[0]
 
-    # 조회수 증가
-    new_views = post.get('view_count', 0) + 1
-    supabase.table("posts").update({"view_count": new_views}).eq("id", post_id).execute()
-    post['view_count'] = new_views
+    # 🔥 [수정됨] 무한 루프 방지 로직 🔥
+    # 요청 주소에 't'(시간) 파라미터가 없을 때만 조회수를 올립니다.
+    # 즉, 사람이 직접 들어왔을 때만 올리고, 기계가 새로고침할 때는 안 올립니다.
+    if 't' not in request.args:
+        new_views = post.get('view_count', 0) + 1
+        supabase.table("posts").update({"view_count": new_views}).eq("id", post_id).execute()
+        post['view_count'] = new_views # 화면 표시용 업데이트
 
-    # 좋아요 정보 가져오기
+    # ... (아래는 기존 코드와 동일) ...
     votes_res = supabase.table("likes").select("*").eq("post_id", post_id).execute()
+    # ...
     votes = votes_res.data
     
     like_count = len([v for v in votes if v['vote_type'] == 'like'])
@@ -73,29 +79,49 @@ def post_detail(post_id):
 # ===========================
 # [투표 기능 (AJAX - 새로고침 없음)]
 # ===========================
+# ===========================
+# [투표 기능 (로직 재정비)]
+# ===========================
+# app.py 의 vote 함수 수정
+
 @app.route('/vote/<int:post_id>/<vote_type>')
 def vote(post_id, vote_type):
     if 'user_id' not in session: 
         return jsonify({'result': 'fail', 'msg': 'login_required'}), 401
     
     user_id = session['user_id']
+    
+    # 1. 내 투표 기록 확인
     existing = supabase.table("likes").select("*").eq("user_id", user_id).eq("post_id", post_id).execute()
     
     if existing.data:
-        old_vote = existing.data[0]['vote_type']
-        if old_vote == vote_type:
-            supabase.table("likes").delete().eq("id", existing.data[0]['id']).execute()
+        # 이미 투표한 기록이 있음
+        old_vote = existing.data[0]
+        
+        if old_vote['vote_type'] == vote_type:
+            # [삭제] 똑같은 걸 또 누름 -> 취소
+            # match를 사용하여 user_id와 post_id가 일치하는 것을 확실하게 삭제
+            supabase.table("likes").delete().match({"user_id": user_id, "post_id": post_id}).execute()
+            print(f"삭제 완료: {user_id} -> {post_id}") # 터미널 로그 확인용
         else:
-            supabase.table("likes").update({"vote_type": vote_type}).eq("id", existing.data[0]['id']).execute()
+            # [변경] 다른 걸 누름 (좋아요 <-> 싫어요)
+            supabase.table("likes").update({"vote_type": vote_type}).eq("id", old_vote['id']).execute()
+            print(f"변경 완료: {user_id} -> {post_id} -> {vote_type}")
     else:
-        supabase.table("likes").insert({"user_id": user_id, "post_id": post_id, "vote_type": vote_type}).execute()
+        # [추가] 기록 없음 -> 새로 생성
+        supabase.table("likes").insert({
+            "user_id": user_id, "post_id": post_id, "vote_type": vote_type
+        }).execute()
+        print(f"추가 완료: {user_id} -> {post_id} -> {vote_type}")
     
-    # 최신 카운트 반환
+    # 2. 최신 숫자 다시 세기
     votes_res = supabase.table("likes").select("*").eq("post_id", post_id).execute()
     votes = votes_res.data
+    
     new_like_count = len([v for v in votes if v['vote_type'] == 'like'])
     new_dislike_count = len([v for v in votes if v['vote_type'] == 'dislike'])
     
+    # 3. 내 현재 상태 확인
     current_my_vote = None
     for v in votes:
         if v['user_id'] == user_id:

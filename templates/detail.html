@@ -7,6 +7,7 @@
     <title>{{ post.title }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         .detail-img {
             max-width: 100%;
@@ -21,6 +22,15 @@
             line-height: 1.7;
             word-break: break-all;
             white-space: pre-wrap;
+        }
+
+        .vote-btn {
+            min-width: 120px;
+            transition: transform 0.1s;
+        }
+
+        .vote-btn:active {
+            transform: scale(0.95);
         }
     </style>
 </head>
@@ -37,7 +47,11 @@
                         <h3 class="fw-bold mb-3">{{ post.title }}</h3>
                         <div class="d-flex justify-content-between text-muted border-bottom pb-3 mb-3 small">
                             <span><i class="fas fa-user"></i> {{ post.users.username }}</span>
-                            <span><i class="fas fa-eye"></i> {{ post.view_count }} · {{ post.created_at[:16] }}</span>
+                            <span id="view-area">
+                                <i class="fas fa-eye"></i> {{ post.view_count }} ·
+                                <span class="time-ago" data-date="{{ post.created_at }}">{{ post.created_at[:16]
+                                    }}</span>
+                            </span>
                         </div>
 
                         {% if post.image_url %}
@@ -52,16 +66,17 @@
 
                         <div class="post-content mt-3">{{ post.content }}</div>
 
-                        <div class="d-flex justify-content-center gap-2 mt-5">
+                        <div id="vote-area" class="d-flex justify-content-center gap-2 mt-5">
                             <button onclick="sendVote('like')" id="btn-like"
-                                class="btn {% if my_vote == 'like' %}btn-primary{% else %}btn-outline-primary{% endif %} px-4 py-2 rounded-pill flex-grow-1 flex-md-grow-0">
-                                <i class="fas fa-thumbs-up"></i> <span class="d-none d-sm-inline">좋아요</span> <span
-                                    id="count-like">{{ like_count }}</span>
+                                class="btn vote-btn rounded-pill {% if my_vote == 'like' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                <i class="fas fa-thumbs-up"></i> 좋아요 <span id="count-like" class="fw-bold ms-1">{{
+                                    like_count }}</span>
                             </button>
+
                             <button onclick="sendVote('dislike')" id="btn-dislike"
-                                class="btn {% if my_vote == 'dislike' %}btn-danger{% else %}btn-outline-danger{% endif %} px-4 py-2 rounded-pill flex-grow-1 flex-md-grow-0">
-                                <i class="fas fa-thumbs-down"></i> <span class="d-none d-sm-inline">싫어요</span> <span
-                                    id="count-dislike">{{ dislike_count }}</span>
+                                class="btn vote-btn rounded-pill {% if my_vote == 'dislike' %}btn-danger{% else %}btn-outline-danger{% endif %}">
+                                <i class="fas fa-thumbs-down"></i> 싫어요 <span id="count-dislike" class="fw-bold ms-1">{{
+                                    dislike_count }}</span>
                             </button>
                         </div>
 
@@ -76,12 +91,13 @@
 
                 <div class="card shadow-sm border-0">
                     <div class="card-header bg-white fw-bold py-3"><i class="far fa-comment-dots"></i> 댓글</div>
-                    <div class="list-group list-group-flush">
+                    <div id="comment-list" class="list-group list-group-flush">
                         {% for parent in parents %}
                         <div class="list-group-item bg-white p-3">
                             <div class="d-flex justify-content-between">
                                 <strong>{{ parent.users.username }}</strong>
-                                <small class="text-muted">{{ parent.created_at[:10] }}</small>
+                                <small class="text-muted time-ago" data-date="{{ parent.created_at }}">{{
+                                    parent.created_at[:10] }}</small>
                             </div>
                             <p class="mb-2 mt-1">{{ parent.content }}</p>
                             {% if session.get('user_id') %}
@@ -95,8 +111,8 @@
                                 <div class="w-100">
                                     <div class="d-flex justify-content-between">
                                         <small class="fw-bold text-primary">{{ reply.users.username }}</small>
-                                        <small class="text-muted" style="font-size: 0.75rem;">{{ reply.created_at[:10]
-                                            }}</small>
+                                        <small class="text-muted time-ago" data-date="{{ reply.created_at }}"
+                                            style="font-size: 0.75rem;">{{ reply.created_at[:10] }}</small>
                                     </div>
                                     <p class="mb-0 small">{{ reply.content }}</p>
                                 </div>
@@ -131,20 +147,100 @@
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
     <script>
-        function sendVote(type) {
-            fetch(`/vote/{{ post.id }}/${type}`).then(r => r.status === 401 ? (alert("로그인 필요"), window.location = "/login") : r.json()).then(d => {
-                if (!d) return;
-                document.getElementById('count-like').innerText = d.like_count;
-                document.getElementById('count-dislike').innerText = d.dislike_count;
-                const btnLike = document.getElementById('btn-like'), btnDislike = document.getElementById('btn-dislike');
-                btnLike.className = "btn btn-outline-primary px-4 py-2 rounded-pill flex-grow-1 flex-md-grow-0";
-                btnDislike.className = "btn btn-outline-danger px-4 py-2 rounded-pill flex-grow-1 flex-md-grow-0";
-                if (d.my_vote === 'like') btnLike.className = "btn btn-primary px-4 py-2 rounded-pill flex-grow-1 flex-md-grow-0";
-                else if (d.my_vote === 'dislike') btnDislike.className = "btn btn-danger px-4 py-2 rounded-pill flex-grow-1 flex-md-grow-0";
+        const SUPABASE_URL = "https://porctgadcosjzgpkxiqw.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvcmN0Z2FkY29zanpncGt4aXF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwMzc4MjYsImV4cCI6MjA4MTYxMzgyNn0.QmB0BnyLAYY0Rt3-fffExHQt4BGgWWr7USc5V9qbA2c";
+
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const postId = "{{ post.id }}";
+
+        // 시간 계산 함수
+        function updateTimeAgo() {
+            const els = document.querySelectorAll('.time-ago');
+            const now = new Date();
+
+            els.forEach(el => {
+                const dateStr = el.getAttribute('data-date');
+                if (!dateStr) return;
+
+                const past = new Date(dateStr);
+                const diffMs = now - past;
+                const diffMin = Math.floor(diffMs / (1000 * 60));
+                const diffHour = Math.floor(diffMs / (1000 * 60 * 60));
+                const diffDay = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+                if (diffMin < 1) el.innerText = "방금 전";
+                else if (diffMin < 60) el.innerText = diffMin + "분 전";
+                else if (diffHour < 24) el.innerText = diffHour + "시간 전";
+                else el.innerText = diffDay + "일 전";
             });
         }
+        updateTimeAgo(); // 최초 실행
+
+        function sendVote(type) {
+            fetch(`/vote/${postId}/${type}`)
+                .then(r => {
+                    if (r.status === 401) { alert("로그인이 필요합니다."); window.location = "/login"; return null; }
+                    return r.json();
+                })
+                .then(data => {
+                    if (!data) return;
+                    updateButtons(data.like_count, data.dislike_count, data.my_vote);
+                })
+                .catch(err => console.error(err));
+        }
+
+        function updateButtons(likeCnt, dislikeCnt, myVote) {
+            document.getElementById('count-like').innerText = likeCnt;
+            document.getElementById('count-dislike').innerText = dislikeCnt;
+            const btnLike = document.getElementById('btn-like');
+            const btnDislike = document.getElementById('btn-dislike');
+            const baseClass = "btn vote-btn rounded-pill ";
+            if (myVote === 'like') {
+                btnLike.className = baseClass + "btn-primary";
+                btnDislike.className = baseClass + "btn-outline-danger";
+            } else if (myVote === 'dislike') {
+                btnLike.className = baseClass + "btn-outline-primary";
+                btnDislike.className = baseClass + "btn-danger";
+            } else {
+                btnLike.className = baseClass + "btn-outline-primary";
+                btnDislike.className = baseClass + "btn-outline-danger";
+            }
+        }
+
+        const channel = _supabase
+            .channel('detail-page-changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'comments', filter: `post_id=eq.${postId}` }, () => {
+                refreshPart('comment-list');
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'likes', filter: `post_id=eq.${postId}` }, () => {
+                refreshPart('vote-area');
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'posts', filter: `id=eq.${postId}` }, () => {
+                refreshPart('view-area');
+            })
+            .subscribe();
+
+        async function refreshPart(elementId) {
+            try {
+                const response = await fetch(window.location.href + '?t=' + Date.now());
+                const text = await response.text();
+                const parser = new DOMParser();
+                const newDoc = parser.parseFromString(text, 'text/html');
+
+                const newContent = newDoc.getElementById(elementId);
+                const oldContent = document.getElementById(elementId);
+
+                if (newContent && oldContent) {
+                    oldContent.innerHTML = newContent.innerHTML;
+                    // 🔥 새로고침 후 시간 다시 계산 🔥
+                    updateTimeAgo();
+                }
+            } catch (err) { console.error(err); }
+        }
     </script>
+
 </body>
 
 </html>
