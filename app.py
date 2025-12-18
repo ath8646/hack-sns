@@ -105,13 +105,23 @@ def admin_user_detail(user_id):
     return render_template('admin_user_detail.html', user=user_res.data[0], posts=posts_res.data)
 
 # 🔥 [추가] 등급 변경 기능 🔥
+# app.py 의 admin_update_grade 함수를 이것으로 교체하세요!
+
 @app.route('/admin/update_grade/<int:user_id>', methods=['POST'])
 def admin_update_grade(user_id):
     if not session.get('is_admin'): return "권한 없음", 403
+    
     new_grade = request.form['grade']
-    supabase.table("users").update({"grade": new_grade}).eq("id", user_id).execute()
+    
+    # 🔥 [핵심] 등급이 '관리자'면 is_admin=True, 아니면 False로 자동 설정 🔥
+    is_admin_flag = (new_grade == '관리자')
+    
+    supabase.table("users").update({
+        "grade": new_grade,
+        "is_admin": is_admin_flag
+    }).eq("id", user_id).execute()
+    
     return redirect(url_for('admin_user_detail', user_id=user_id))
-
 @app.route('/admin/toggle_admin/<int:user_id>')
 def toggle_admin(user_id):
     if not session.get('is_admin'): return "권한 없음", 403
@@ -264,5 +274,32 @@ def delete(post_id):
     if session.get('is_admin'): return redirect(url_for('admin_list'))
     return redirect(url_for('index'))
 
+# ===========================
+# [지렁이 게임 기능]
+# ===========================
+@app.route('/game')
+def game_page():
+    return render_template('snake.html')
+
+@app.route('/api/save_score', methods=['POST'])
+def save_score():
+    if 'user_id' not in session: return jsonify({'result': 'fail', 'msg': '로그인 필요'})
+    data = request.json
+    score = data.get('score')
+    
+    # 최고 기록 갱신일 때만 저장하거나, 무조건 저장하거나 선택 (여기선 무조건 저장)
+    supabase.table("snake_scores").insert({
+        "user_id": session['user_id'],
+        "score": score
+    }).execute()
+    return jsonify({'result': 'success'})
+
+# app.py 의 get_rankings 함수 수정
+
+@app.route('/api/get_rankings')
+def get_rankings():
+    # 🔥 [수정] leaderboard 뷰에서 가져오기 (이미 유저별 최고점수로 정리됨)
+    res = supabase.table("leaderboard").select("*").order("score", desc=True).limit(10).execute()
+    return jsonify(res.data)
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

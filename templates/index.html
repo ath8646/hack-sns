@@ -1,403 +1,598 @@
 <!DOCTYPE html>
 <html lang="ko">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Hacker's Community</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body {
-            background-color: #f8f9fa;
+      body {
+        background-color: #f8f9fa;
+      }
+
+      .navbar {
+        background: #343a40;
+      }
+
+      .navbar-brand {
+        font-size: 1.2rem;
+      }
+
+      .list-group-item {
+        transition: 0.2s;
+        border-left: 5px solid transparent;
+      }
+
+      .list-group-item:hover {
+        background-color: #f1f3f5;
+        border-left: 5px solid #0d6efd;
+        transform: translateX(5px);
+      }
+
+      .write-btn {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        font-size: 24px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+      }
+
+      .post-img-preview {
+        width: 100%;
+        height: 250px;
+        object-fit: cover;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        border: 1px solid #eee;
+      }
+
+      .account-box {
+        background: #f1f3f5;
+        padding: 15px;
+        border-radius: 10px;
+        font-family: monospace;
+        font-size: 1.1rem;
+      }
+
+      /* 등급별 배지 스타일 */
+      .grade-badge {
+        font-size: 0.75rem;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-left: 3px;
+        vertical-align: middle;
+        color: white;
+        font-weight: bold;
+        background-color: #0d6efd;
+      }
+
+      .grade-badge[data-grade="골드 회원"] {
+        background-color: #ffd700;
+        color: #000;
+        border: 1px solid #e0c200;
+        /* 🔥 아래 한 줄을 추가하면 노란색으로 빛납니다! */
+        box-shadow: 0 0 8px rgba(255, 215, 0, 0.7);
+      }
+
+      .grade-badge[data-grade="다이아몬드 회원"] {
+        background-color: #00e1ff;
+        color: #fff;
+        box-shadow: 0 0 5px #00e1ff;
+      }
+
+      .grade-badge[data-grade="너 짱 최고 회원"] {
+        background: linear-gradient(
+          45deg,
+          #ff0000,
+          #ff7300,
+          #fffb00,
+          #48ff00,
+          #00ffd5,
+          #002bff,
+          #7a00ff,
+          #ff00c8,
+          #ff0000
+        );
+        background-size: 400%;
+        animation: rainbow 3s linear infinite;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+      }
+
+      /* 관리자 등급 스타일 - 빨간색 + 왕관 */
+      .grade-badge[data-grade="관리자"] {
+        background-color: #dc3545; /* 강렬한 레드 */
+        box-shadow: 0 0 8px rgba(220, 53, 69, 0.6);
+        border: 1px solid #a71d2a;
+        padding-left: 8px;
+        padding-right: 8px;
+      }
+      .grade-badge[data-grade="관리자"]::before {
+        content: "👑 ";
+      }
+
+      @keyframes rainbow {
+        0% {
+          background-position: 0% 50%;
         }
 
-        .navbar {
-            background: #343a40;
+        100% {
+          background-position: 100% 50%;
+        }
+      }
+
+      /* 후원 모달 스타일 */
+      .donation-icon {
+        font-size: 4rem;
+        color: #ff6b6b;
+        animation: float 3s ease-in-out infinite;
+      }
+
+      @keyframes float {
+        0% {
+          transform: translateY(0px);
         }
 
-        .navbar-brand {
-            font-size: 1.2rem;
+        50% {
+          transform: translateY(-10px);
         }
 
-        .list-group-item {
-            transition: 0.2s;
-            border-left: 5px solid transparent;
+        100% {
+          transform: translateY(0px);
         }
+      }
 
-        .list-group-item:hover {
-            background-color: #f1f3f5;
-            border-left: 5px solid #0d6efd;
-            transform: translateX(5px);
-        }
+      .account-card {
+        background-color: #f1f3f5;
+        border-radius: 15px;
+        padding: 15px;
+        position: relative;
+        border: 1px solid #dee2e6;
+      }
 
-        .write-btn {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            font-size: 24px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-            z-index: 1000;
-        }
-
-        .post-img-preview {
-            width: 100%;
-            height: 250px;
-            object-fit: cover;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            border: 1px solid #eee;
-        }
-
-        .admin-badge {
-            font-size: 0.75rem;
-            background-color: #dc3545;
-            color: white;
-            padding: 2px 6px;
-            border-radius: 4px;
-            margin-left: 3px;
-            vertical-align: middle;
-        }
-
-        /* 등급별 배지 스타일 */
-        .grade-badge {
-            font-size: 0.75rem;
-            padding: 2px 6px;
-            border-radius: 4px;
-            margin-left: 3px;
-            vertical-align: middle;
-            color: white;
-            font-weight: bold;
-            background-color: #0d6efd;
-        }
-
-        .grade-badge[data-grade="골드 회원"] {
-            background-color: #FFD700;
-            color: #000;
-            border: 1px solid #e0c200;
-        }
-
-        .grade-badge[data-grade="다이아몬드 회원"] {
-            background-color: #00e1ff;
-            color: #fff;
-            box-shadow: 0 0 5px #00e1ff;
-        }
-
-        .grade-badge[data-grade="너 짱 최고 회원"] {
-            background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
-            background-size: 400%;
-            animation: rainbow 3s linear infinite;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-        }
-
-        @keyframes rainbow {
-            0% {
-                background-position: 0% 50%;
-            }
-
-            100% {
-                background-position: 100% 50%;
-            }
-        }
-
-        /* 🔥 [추가] 후원 모달 스타일 🔥 */
-        .donation-icon {
-            font-size: 4rem;
-            color: #ff6b6b;
-            animation: float 3s ease-in-out infinite;
-        }
-
-        @keyframes float {
-            0% {
-                transform: translateY(0px);
-            }
-
-            50% {
-                transform: translateY(-10px);
-            }
-
-            100% {
-                transform: translateY(0px);
-            }
-        }
-
-        .account-card {
-            background-color: #f1f3f5;
-            border-radius: 15px;
-            padding: 15px;
-            position: relative;
-            border: 1px solid #dee2e6;
-        }
-
-        .bank-logo {
-            width: 40px;
-            height: 40px;
-            background: #fff;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            color: #0064FF;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
+      .bank-logo {
+        width: 40px;
+        height: 40px;
+        background: #fff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: #0064ff;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
     </style>
-</head>
+  </head>
 
-<body>
-
+  <body>
     <nav class="navbar navbar-expand-lg navbar-dark mb-4 px-3">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="/"><i class="fas fa-shield-alt"></i> Secure Community</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span
-                    class="navbar-toggler-icon"></span></button>
-            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-                <div class="navbar-nav align-items-center mt-3 mt-lg-0 gap-2">
-                    {% if session.get('is_admin') %}<a href="/admin"
-                        class="btn btn-warning btn-sm fw-bold w-100 w-lg-auto text-nowrap"><i class="fas fa-cogs"></i>
-                        관리자 페이지</a>{% endif %}
-                    {% if session.get('username') %}
-                    <span class="text-white fw-bold me-2 mb-2 mb-lg-0 text-nowrap">
-                        <i class="fas fa-user"></i> {{ session.get('username') }}
-                        {% if session.get('is_admin') %}<span class="admin-badge">관리자</span>{% endif %}
-                    </span>
-                    <a href="/settings" class="btn btn-outline-light btn-sm w-100 w-lg-auto text-nowrap"><i
-                            class="fas fa-cog"></i> 설정</a>
-                    <a href="/logout" class="btn btn-outline-danger btn-sm w-100 w-lg-auto text-nowrap">로그아웃</a>
-                    {% else %}
-                    <a href="/login" class="btn btn-light btn-sm fw-bold w-100 w-lg-auto text-nowrap">로그인</a>
-                    <a href="/register" class="btn btn-outline-light btn-sm w-100 w-lg-auto text-nowrap">회원가입</a>
-                    {% endif %}
-                </div>
-            </div>
+      <div class="container">
+        <a class="navbar-brand fw-bold" href="/"
+          ><i class="fas fa-shield-alt"></i> Secure Community</a
+        >
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div
+          class="collapse navbar-collapse justify-content-end"
+          id="navbarNav"
+        >
+          <div class="navbar-nav align-items-center mt-3 mt-lg-0 gap-2">
+            {% if session.get('is_admin') %}<a
+              href="/admin"
+              class="btn btn-warning btn-sm fw-bold w-100 w-lg-auto text-nowrap"
+              ><i class="fas fa-cogs"></i> 관리자 페이지</a
+            >{% endif %} {% if session.get('username') %}
+            <span class="text-white fw-bold me-2 mb-2 mb-lg-0 text-nowrap">
+              <i class="fas fa-user"></i> {{ session.get('username') }} {% if
+              session.get('is_admin') %}<span
+                class="grade-badge"
+                data-grade="관리자"
+                >관리자</span
+              >{% endif %}
+            </span>
+            <a
+              href="/settings"
+              class="btn btn-outline-light btn-sm w-100 w-lg-auto text-nowrap"
+              ><i class="fas fa-cog"></i> 설정</a
+            >
+            <a
+              href="/logout"
+              class="btn btn-outline-danger btn-sm w-100 w-lg-auto text-nowrap"
+              onclick="return confirm('정말로 로그아웃 하시겠습니까?')"
+              >로그아웃</a
+            >
+            {% else %}
+            <a
+              href="/login"
+              class="btn btn-light btn-sm fw-bold w-100 w-lg-auto text-nowrap"
+              >로그인</a
+            >
+            <a
+              href="/register"
+              class="btn btn-outline-light btn-sm w-100 w-lg-auto text-nowrap"
+              >회원가입</a
+            >
+            {% endif %}
+          </div>
         </div>
+      </div>
     </nav>
 
-    <div class="container" style="min-height: 80vh;">
-        <div class="row">
-            <div class="col-md-8 mx-auto" id="main-content">
-                <div class="mb-4">
-                    <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
-                        <h5 class="fw-bold text-danger m-0"><i class="fas fa-bullhorn"></i> 공지사항</h5>
-                        {% if session.get('is_admin') %}<button class="btn btn-sm btn-outline-danger"
-                            data-bs-toggle="modal" data-bs-target="#noticeModal">공지 쓰기</button>{% endif %}
-                    </div>
-                    {% for notice in notices %}
-                    <div
-                        class="alert alert-light border shadow-sm d-flex justify-content-between align-items-center py-2 px-3 mb-2">
-                        <div><span class="badge bg-danger me-2">NOTICE</span> {{ notice.content }}</div>
-                        {% if session.get('is_admin') %}<a href="/notice/delete/{{ notice.id }}"
-                            class="text-secondary small" onclick="return confirm('삭제?')"><i
-                                class="fas fa-times"></i></a>{% endif %}
-                    </div>
-                    {% else %}
-                    <p class="text-muted small ms-2">등록된 공지가 없습니다.</p>
-                    {% endfor %}
-                </div>
-
-                <h4 class="mb-3 fw-bold border-bottom pb-2">📋 자유게시판</h4>
-                <div id="post-list" class="list-group shadow-sm">
-                    {% for post in posts %}
-                    <div class="list-group-item list-group-item-action p-3">
-                        <div class="d-flex flex-column">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <a href="/post/{{ post.id }}" class="text-decoration-none w-100 me-3">
-                                    <h5 class="mb-1 text-primary fw-bold">{{ post.title }}</h5>
-                                    <p class="mb-1 text-secondary text-truncate">{{ post.content }}</p>
-                                </a>
-                                {% if session.get('user_id') == post.author_id or session.get('is_admin') %}
-                                <div class="d-flex gap-1">
-                                    <a href="/edit/{{ post.id }}"
-                                        class="btn btn-sm btn-outline-secondary text-nowrap"><i
-                                            class="fas fa-edit"></i></a>
-                                    <button type="button" class="btn btn-sm btn-outline-danger text-nowrap"
-                                        data-bs-toggle="modal" data-bs-target="#deleteModal{{ post.id }}"><i
-                                            class="fas fa-trash-alt"></i></button>
-                                </div>
-                                {% endif %}
-                            </div>
-                            {% if post.image_url %}
-                            <a href="/post/{{ post.id }}">
-                                {% if '.mp4' in post.image_url or '.mov' in post.image_url or '.webm' in post.image_url
-                                %}
-                                <video src="{{ post.image_url }}" class="post-img-preview" preload="metadata"
-                                    playsinline muted></video>
-                                {% else %}
-                                <img src="{{ post.image_url }}" class="post-img-preview" alt="media">
-                                {% endif %}
-                            </a>
-                            {% endif %}
-                            <div class="small text-muted text-end">
-                                <i class="fas fa-user-circle"></i> {{ post.users.username }}
-                                <span class="grade-badge" data-grade="{{ post.users.grade or '일반 회원' }}">{{
-                                    post.users.grade or '일반 회원' }}</span>
-                                {% if post.users.is_admin %}<span class="admin-badge">관리자</span>{% endif %}
-                                · <span class="time-ago" data-date="{{ post.created_at }}">{{ post.created_at[:10]
-                                    }}</span>
-                                · <i class="fas fa-eye ms-1"></i> {{ post.view_count }}
-                            </div>
-                        </div>
-                    </div>
-                    {% else %}
-                    <div class="text-center p-5 text-muted">
-                        <p>아직 작성된 글이 없습니다.</p>
-                    </div>
-                    {% endfor %}
-                </div>
+    <div class="container" style="min-height: 80vh">
+      <div class="row">
+        <div class="col-md-8 mx-auto" id="main-content">
+          <div class="mb-4">
+            <div
+              class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2"
+            >
+              <h5 class="fw-bold text-danger m-0">
+                <i class="fas fa-bullhorn"></i> 공지사항
+              </h5>
+              {% if session.get('is_admin') %}<button
+                class="btn btn-sm btn-outline-danger"
+                data-bs-toggle="modal"
+                data-bs-target="#noticeModal"
+              >
+                공지 쓰기</button
+              >{% endif %}
             </div>
+            {% for notice in notices %}
+            <div
+              class="alert alert-light border shadow-sm d-flex justify-content-between align-items-center py-2 px-3 mb-2"
+            >
+              <div>
+                <span class="badge bg-danger me-2">NOTICE</span> {{
+                notice.content }}
+              </div>
+              {% if session.get('is_admin') %}<a
+                href="/notice/delete/{{ notice.id }}"
+                class="text-secondary small"
+                onclick="return confirm('삭제?')"
+                ><i class="fas fa-times"></i></a
+              >{% endif %}
+            </div>
+            {% else %}
+            <p class="text-muted small ms-2">등록된 공지가 없습니다.</p>
+            {% endfor %}
+          </div>
+
+          <h4 class="mb-3 fw-bold border-bottom pb-2">📋 자유게시판</h4>
+          <div id="post-list" class="list-group shadow-sm">
+            {% for post in posts %}
+            <div class="list-group-item list-group-item-action p-3">
+              <div class="d-flex flex-column">
+                <div
+                  class="d-flex justify-content-between align-items-start mb-2"
+                >
+                  <a
+                    href="/post/{{ post.id }}"
+                    class="text-decoration-none w-100 me-3"
+                  >
+                    <h5 class="mb-1 text-primary fw-bold">{{ post.title }}</h5>
+                    <p class="mb-1 text-secondary text-truncate">
+                      {{ post.content }}
+                    </p>
+                  </a>
+                  {% if session.get('user_id') == post.author_id or
+                  session.get('is_admin') %}
+                  <div class="d-flex gap-1">
+                    <a
+                      href="/edit/{{ post.id }}"
+                      class="btn btn-sm btn-outline-secondary text-nowrap"
+                      ><i class="fas fa-edit"></i
+                    ></a>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-danger text-nowrap"
+                      data-bs-toggle="modal"
+                      data-bs-target="#deleteModal{{ post.id }}"
+                    >
+                      <i class="fas fa-trash-alt"></i>
+                    </button>
+                  </div>
+                  {% endif %}
+                </div>
+                {% if post.image_url %}
+                <a href="/post/{{ post.id }}">
+                  {% if '.mp4' in post.image_url or '.mov' in post.image_url or
+                  '.webm' in post.image_url %}
+                  <video
+                    src="{{ post.image_url }}"
+                    class="post-img-preview"
+                    preload="metadata"
+                    playsinline
+                    muted
+                  ></video>
+                  {% else %}
+                  <img
+                    src="{{ post.image_url }}"
+                    class="post-img-preview"
+                    alt="media"
+                  />
+                  {% endif %}
+                </a>
+                {% endif %}
+                <div class="small text-muted text-end">
+                  <i class="fas fa-user-circle"></i> {{ post.users.username }}
+                  <span
+                    class="grade-badge"
+                    data-grade="{{ post.users.grade or '일반 회원' }}"
+                    >{{ post.users.grade or '일반 회원' }}</span
+                  >
+                  ·
+                  <span class="time-ago" data-date="{{ post.created_at }}"
+                    >{{ post.created_at[:10] }}</span
+                  >
+                  · <i class="fas fa-eye ms-1"></i> {{ post.view_count }}
+                </div>
+              </div>
+            </div>
+            {% else %}
+            <div class="text-center p-5 text-muted">
+              <p>아직 작성된 글이 없습니다.</p>
+            </div>
+            {% endfor %}
+          </div>
         </div>
+      </div>
     </div>
 
     <div class="modal fade" id="noticeModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">공지사항 작성</h5><button type="button" class="btn-close"
-                        data-bs-dismiss="modal"></button>
-                </div>
-                <form action="/notice/write" method="POST">
-                    <div class="modal-body"><input type="text" name="content" class="form-control" placeholder="공지 내용"
-                            required></div>
-                    <div class="modal-footer"><button type="submit" class="btn btn-danger">등록</button></div>
-                </form>
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">공지사항 작성</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <form action="/notice/write" method="POST">
+            <div class="modal-body">
+              <input
+                type="text"
+                name="content"
+                class="form-control"
+                placeholder="공지 내용"
+                required
+              />
             </div>
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-danger">등록</button>
+            </div>
+          </form>
         </div>
+      </div>
     </div>
 
     <footer class="text-center mt-5 mb-4 text-muted small">
-        <p>Secure Community © 2025</p>
-        <button class="btn btn-link btn-sm text-decoration-none text-muted opacity-75" data-bs-toggle="modal"
-            data-bs-target="#donationModal">
-            <i class="fas fa-ice-cream text-danger"></i> 개발자에게 달콤한 아이스크림 사주기
-        </button>
+      <div class="mb-3">
+        <a
+          href="/game"
+          class="btn btn-outline-success rounded-pill px-4 fw-bold"
+        >
+          <i class="fas fa-gamepad"></i> 🐍 지렁이 게임하기
+        </a>
+      </div>
+
+      <p>Secure Community © 2025</p>
+      <button
+        class="btn btn-link btn-sm text-decoration-none text-muted opacity-75"
+        data-bs-toggle="modal"
+        data-bs-target="#donationModal"
+      >
+        <i class="fas fa-ice-cream text-danger"></i> 개발자에게 달콤한
+        아이스크림 사주기
+      </button>
     </footer>
 
     <div class="modal fade" id="donationModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-                <div class="modal-header border-0 pb-0">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body text-center pt-0 px-4 pb-4">
-                    <div class="donation-icon mb-3">🍦</div>
+      <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div
+          class="modal-content border-0 shadow-lg"
+          style="border-radius: 20px"
+        >
+          <div class="modal-header border-0 pb-0">
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body text-center pt-0 px-4 pb-4">
+            <div class="donation-icon mb-3">🍦</div>
 
-                    <h5 class="fw-bold mb-2">개발자 응원하기</h5>
-                    <p class="text-muted small mb-4">
-                        아 이런거 안주셔도 되는데..<br>아 진짜 괜찮은데.. 😋
-                    </p>
+            <h5 class="fw-bold mb-2">개발자 응원하기</h5>
+            <p class="text-muted small mb-4">
+              아 이런거 안주셔도 되는데..<br />아 진짜 괜찮은데.. 😋
+            </p>
 
-                    <div class="mb-2 fw-bold small text-secondary">CREATOR: ATH</div>
+            <div class="mb-2 fw-bold small text-secondary">CREATOR: ATH</div>
 
-                    <div class="account-card mb-3 text-start">
-                        <div class="d-flex align-items-center mb-2">
-                            <div class="bank-logo me-2">toss</div>
-                            <span class="fw-bold">토스뱅크</span>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="fs-5 fw-bold" style="letter-spacing: 0.5px;">1908-8089-3265</span>
-                        </div>
-                        <button class="btn btn-dark btn-sm w-100 mt-2 rounded-pill fw-bold" onclick="copyAccount()">
-                            <i class="far fa-copy"></i> 계좌번호 복사하기
-                        </button>
-                    </div>
-
-                    <button class="btn btn-secondary w-100 fw-bold py-2 rounded-pill" data-bs-dismiss="modal">
-                        나중에 줄게요
-                    </button>
-                </div>
+            <div class="account-card mb-3 text-start">
+              <div class="d-flex align-items-center mb-2">
+                <div class="bank-logo me-2">toss</div>
+                <span class="fw-bold">토스뱅크</span>
+              </div>
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="fs-5 fw-bold" style="letter-spacing: 0.5px"
+                  >1908-8089-3265</span
+                >
+              </div>
+              <button
+                class="btn btn-dark btn-sm w-100 mt-2 rounded-pill fw-bold"
+                onclick="copyAccount()"
+              >
+                <i class="far fa-copy"></i> 계좌번호 복사하기
+              </button>
             </div>
+
+            <button
+              class="btn btn-secondary w-100 fw-bold py-2 rounded-pill"
+              data-bs-dismiss="modal"
+            >
+              나중에 줄게요
+            </button>
+          </div>
         </div>
+      </div>
     </div>
 
     {% for post in posts %}
     <div class="modal fade" id="deleteModal{{ post.id }}" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title">삭제 확인</h5><button class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body text-center">
-                    <p>정말 삭제하시겠습니까?</p>
-                </div>
-                <div class="modal-footer justify-content-center"><button class="btn btn-secondary"
-                        data-bs-dismiss="modal">취소</button><a href="/delete/{{ post.id }}" class="btn btn-danger">삭제</a>
-                </div>
-            </div>
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title">삭제 확인</h5>
+            <button class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body text-center">
+            <p>정말 삭제하시겠습니까?</p>
+          </div>
+          <div class="modal-footer justify-content-center">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">
+              취소</button
+            ><a href="/delete/{{ post.id }}" class="btn btn-danger">삭제</a>
+          </div>
         </div>
+      </div>
     </div>
-    {% endfor %}
-
-    {% if session.get('user_id') %}<button class="btn btn-primary write-btn" data-bs-toggle="modal"
-        data-bs-target="#writeModal"><i class="fas fa-pen"></i></button>
+    {% endfor %} {% if session.get('user_id') %}<button
+      class="btn btn-primary write-btn"
+      data-bs-toggle="modal"
+      data-bs-target="#writeModal"
+    >
+      <i class="fas fa-pen"></i>
+    </button>
     <div class="modal fade" id="writeModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">새 글 작성</h5><button class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form action="/write" method="POST" enctype="multipart/form-data">
-                    <div class="modal-body"><input type="text" name="title" class="form-control mb-2" placeholder="제목"
-                            required><textarea name="content" class="form-control mb-3" rows="5" placeholder="내용"
-                            required></textarea><input type="file" name="file" class="form-control"
-                            accept="image/*, video/*"></div>
-                    <div class="modal-footer"><button type="submit" class="btn btn-primary">등록</button></div>
-                </form>
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">새 글 작성</h5>
+            <button class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <form action="/write" method="POST" enctype="multipart/form-data">
+            <div class="modal-body">
+              <input
+                type="text"
+                name="title"
+                class="form-control mb-2"
+                placeholder="제목"
+                required
+              /><textarea
+                name="content"
+                class="form-control mb-3"
+                rows="5"
+                placeholder="내용"
+                required
+              ></textarea
+              ><input
+                type="file"
+                name="file"
+                class="form-control"
+                accept="image/*, video/*"
+              />
             </div>
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-primary">등록</button>
+            </div>
+          </form>
         </div>
-    </div>{% endif %}
+      </div>
+    </div>
+    {% endif %}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const SUPABASE_URL = "https://porctgadcosjzgpkxiqw.supabase.co";
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvcmN0Z2FkY29zanpncGt4aXF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwMzc4MjYsImV4cCI6MjA4MTYxMzgyNn0.QmB0BnyLAYY0Rt3-fffExHQt4BGgWWr7USc5V9qbA2c";
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      const SUPABASE_URL = "https://porctgadcosjzgpkxiqw.supabase.co";
+      const SUPABASE_KEY =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvcmN0Z2FkY29zanpncGt4aXF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwMzc4MjYsImV4cCI6MjA4MTYxMzgyNn0.QmB0BnyLAYY0Rt3-fffExHQt4BGgWWr7USc5V9qbA2c";
+      const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // 🔥 계좌번호 복사 기능 🔥
-        function copyAccount() {
-            const account = "1908-8089-3265";
-            navigator.clipboard.writeText(account).then(() => {
-                alert("계좌번호가 복사되었습니다! 🍦\n토스뱅크 " + account);
-            }).catch(err => {
-                alert("복사에 실패했습니다 ㅠㅠ\n직접 입력해주세요.");
-            });
+      // 🔥 계좌번호 복사 기능 🔥
+      function copyAccount() {
+        const account = "1908-8089-3265";
+        navigator.clipboard
+          .writeText(account)
+          .then(() => {
+            alert("계좌번호가 복사되었습니다! 🍦\n토스뱅크 " + account);
+          })
+          .catch((err) => {
+            alert("복사에 실패했습니다 ㅠㅠ\n직접 입력해주세요.");
+          });
+      }
+
+      function updateTimeAgo() {
+        const els = document.querySelectorAll(".time-ago");
+        const now = new Date();
+        els.forEach((el) => {
+          const dateStr = el.getAttribute("data-date");
+          if (!dateStr) return;
+          const diffMs = now - new Date(dateStr);
+          const diffMin = Math.floor(diffMs / 60000);
+          if (diffMin < 1) el.innerText = "방금 전";
+          else if (diffMin < 60) el.innerText = diffMin + "분 전";
+          else
+            el.innerText =
+              Math.floor(diffMs / 86400000) > 0
+                ? Math.floor(diffMs / 86400000) + "일 전"
+                : Math.floor(diffMs / 3600000) + "시간 전";
+        });
+      }
+      updateTimeAgo();
+
+      const channel = _supabase
+        .channel("index-updates")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "posts" },
+          () => refreshPage()
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "notices" },
+          () => refreshPage()
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "users" },
+          () => refreshPage()
+        )
+        .subscribe();
+
+      async function refreshPage() {
+        try {
+          const response = await fetch(
+            window.location.href + "?t=" + Date.now()
+          );
+          const text = await response.text();
+          const newDoc = new DOMParser().parseFromString(text, "text/html");
+          document.getElementById("main-content").innerHTML =
+            newDoc.getElementById("main-content").innerHTML;
+          updateTimeAgo();
+        } catch (err) {
+          console.error("Update failed:", err);
         }
-
-        function updateTimeAgo() {
-            const els = document.querySelectorAll('.time-ago');
-            const now = new Date();
-            els.forEach(el => {
-                const dateStr = el.getAttribute('data-date');
-                if (!dateStr) return;
-                const diffMs = now - new Date(dateStr);
-                const diffMin = Math.floor(diffMs / 60000);
-                if (diffMin < 1) el.innerText = "방금 전";
-                else if (diffMin < 60) el.innerText = diffMin + "분 전";
-                else el.innerText = Math.floor(diffMs / 86400000) > 0 ? Math.floor(diffMs / 86400000) + "일 전" : Math.floor(diffMs / 3600000) + "시간 전";
-            });
-        }
-        updateTimeAgo();
-
-        const channel = _supabase
-            .channel('index-updates')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => refreshPage())
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'notices' }, () => refreshPage())
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => refreshPage())
-            .subscribe();
-
-        async function refreshPage() {
-            try {
-                const response = await fetch(window.location.href + '?t=' + Date.now());
-                const text = await response.text();
-                const newDoc = new DOMParser().parseFromString(text, 'text/html');
-                document.getElementById('main-content').innerHTML = newDoc.getElementById('main-content').innerHTML;
-                updateTimeAgo();
-            } catch (err) { console.error('Update failed:', err); }
-        }
+      }
     </script>
-</body>
-
+  </body>
 </html>

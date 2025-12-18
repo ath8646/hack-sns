@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Google Snake Game Full Version</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        /* 스타일은 이전과 동일하게 유지하여 구글 레이아웃 완벽 재현 */
+        * { box-sizing: border-box; font-family: 'Roboto', sans-serif; user-select: none; -webkit-user-select: none; }
+        body { 
+            background-color: #202124; margin: 0; padding: 0; height: 100vh; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            color: white; overflow: hidden;
+        }
+        .game-container {
+            position: relative; width: 600px; display: flex; flex-direction: column;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .header {
+            background-color: #4a752c; height: 60px; border-radius: 8px 8px 0 0;
+            display: flex; justify-content: space-between; align-items: center; padding: 0 24px; z-index: 2;
+        }
+        .score-display { display: flex; align-items: center; gap: 12px; font-size: 24px; font-weight: bold; }
+        .trophy-btn { cursor: pointer; transition: transform 0.2s; } .trophy-btn:hover { transform: scale(1.1); }
+        canvas {
+            background-color: #aad751; width: 100%; height: auto; border-radius: 0 0 8px 8px; cursor: pointer; display: block;
+            /* 배경 격자 80px (40px*2) */
+            background-image: linear-gradient(45deg, #a2d149 25%, transparent 25%, transparent 75%, #a2d149 75%, #a2d149), linear-gradient(45deg, #a2d149 25%, transparent 25%, transparent 75%, #a2d149 75%, #a2d149);
+            background-size: 80px 80px; background-position: 0 0, 40px 40px;
+        }
+        .overlay {
+            position: absolute; top: 60px; left: 0; width: 100%; height: 520px;
+            background: #578a34; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border-radius: 0 0 8px 8px; z-index: 10;
+        }
+        .hidden { display: none !important; }
+        .play-button {
+            width: 100px; height: 100px; background: #1558b0; border-radius: 50%; border: none;
+            box-shadow: 0 6px 0 #0c4389; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: transform 0.1s; margin-bottom: 30px;
+        }
+        .play-button:active { transform: translateY(6px); box-shadow: none; }
+        .play-button i { font-size: 50px; color: white; margin-left: 8px; }
+        .menu-btn {
+            background: none; border: none; color: white; font-size: 16px; font-weight: bold;
+            cursor: pointer; opacity: 0.9; margin-top: 15px; text-decoration: none; display: flex; align-items: center; gap: 8px;
+        }
+        .menu-btn:hover { opacity: 1; text-decoration: underline; }
+        .ranking-box {
+            background: white; width: 85%; height: 70%; border-radius: 10px; padding: 20px;
+            overflow-y: auto; color: #333; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .rank-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #eee; font-size: 16px; }
+        .medal { font-size: 20px; width: 30px; text-align: center; display: inline-block; }
+        .rank-name { font-weight: bold; flex-grow: 1; margin-left: 10px; text-align: left; }
+        .rank-score { font-weight: bold; color: #1558b0; font-family: monospace; font-size: 18px; }
+        .user-grade { font-size: 11px; color: #777; font-weight: normal; margin-left: 6px; background: #eee; padding: 2px 6px; border-radius: 4px; }
+        @media (max-width: 620px) {
+            .game-container { width: 360px; }
+            canvas { background-size: 48px 48px; background-position: 0 0, 24px 24px; }
+            .overlay { height: 312px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <div class="header">
+        <div class="score-display">
+            <img src="https://www.google.com/logos/fnbx/snake_arcade/v3/apple_00.png" alt="score" width="32">
+            <span id="scoreText">0</span>
+        </div>
+        <div class="score-display trophy-btn" onclick="showRanking()">
+            <img src="https://www.google.com/logos/fnbx/snake_arcade/v3/trophy_00.png" alt="best" width="36">
+        </div>
+    </div>
+
+    <canvas id="gameCanvas" width="600" height="520"></canvas>
+
+    <div id="startScreen" class="overlay">
+        <img src="https://www.google.com/logos/fnbx/snake_arcade/v3/trophy_00.png" width="120" style="margin-bottom: 20px; opacity: 0.9;">
+        <button class="play-button" onclick="startGame()"><i class="fas fa-play"></i></button>
+        <a href="/" class="menu-btn"><i class="fas fa-sign-out-alt"></i> 커뮤니티로 돌아가기</a>
+    </div>
+
+    <div id="gameOverScreen" class="overlay hidden">
+        <h2 style="font-size: 32px; margin-bottom: 10px; font-weight: 700;">GAME OVER</h2>
+        <div style="font-size: 20px; margin-bottom: 30px;">최종 점수: <span id="finalScore" style="font-weight:bold;">0</span></div>
+        <button class="play-button" style="width: 80px; height: 80px;" onclick="startGame()"><i class="fas fa-redo" style="margin:0; font-size: 35px;"></i></button>
+        <button class="menu-btn" onclick="showRanking()"><i class="fas fa-list"></i> 랭킹 보기</button>
+        <a href="/" class="menu-btn"><i class="fas fa-home"></i> 커뮤니티로 돌아가기</a>
+    </div>
+
+    <div id="rankingScreen" class="overlay hidden">
+        <div class="ranking-box" id="rankList"><div style="text-align: center; margin-top: 50px;">로딩중...</div></div>
+        <button class="menu-btn" onclick="closeRanking()" style="margin-top: 15px; font-size: 18px;">닫기</button>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let TILE_SIZE = 40; 
+    let COLS = 15; let ROWS = 13;
+    let GAME_SPEED = 110;
+
+    if (window.innerWidth < 600) {
+        TILE_SIZE = 24; canvas.width = 360; canvas.height = 312;
+    }
+
+    let snake = [];
+    let velocity = { x: 0, y: 0 };
+    let food = { x: 0, y: 0 };
+    let score = 0;
+    let gameLoopId;
+    let isRunning = false;
+    let inputQueue = [];
+
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const audioCtx = new AudioContext();
+
+    function playSound(type) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
+        if (type === 'eat') {
+            osc.type = 'triangle'; osc.frequency.setValueAtTime(600, now); osc.frequency.exponentialRampToValueAtTime(1000, now + 0.1);
+            gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.start(now); osc.stop(now + 0.1);
+        } else if (type === 'die') {
+            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(200, now); osc.frequency.linearRampToValueAtTime(50, now + 0.3);
+            gain.gain.setValueAtTime(0.3, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+            osc.start(now); osc.stop(now + 0.3);
+        }
+    }
+
+    function initGame() {
+        const startX = Math.floor(COLS / 3); const startY = Math.floor(ROWS / 2);
+        snake = [{ x: startX, y: startY }, { x: startX - 1, y: startY }, { x: startX - 2, y: startY }];
+        velocity = { x: 1, y: 0 };
+        score = 0; inputQueue = [];
+        document.getElementById("scoreText").innerText = score;
+        placeFood();
+    }
+
+    function startGame() {
+        document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
+        initGame(); isRunning = true;
+        if(gameLoopId) clearInterval(gameLoopId);
+        gameLoopId = setInterval(update, GAME_SPEED);
+    }
+
+    function placeFood() {
+        let valid = false;
+        while (!valid) {
+            food = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
+            valid = !snake.some(segment => segment.x === food.x && segment.y === food.y);
+        }
+    }
+
+    function update() {
+        if (inputQueue.length > 0) {
+            const nextDir = inputQueue.shift();
+            const goingUp = velocity.y === -1; const goingDown = velocity.y === 1;
+            const goingLeft = velocity.x === -1; const goingRight = velocity.x === 1;
+            if (nextDir === 'UP' && !goingDown) velocity = { x: 0, y: -1 };
+            if (nextDir === 'DOWN' && !goingUp) velocity = { x: 0, y: 1 };
+            if (nextDir === 'LEFT' && !goingRight) velocity = { x: -1, y: 0 };
+            if (nextDir === 'RIGHT' && !goingLeft) velocity = { x: 1, y: 0 };
+        }
+        const head = { x: snake[0].x + velocity.x, y: snake[0].y + velocity.y };
+        if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS || snake.some(s => s.x === head.x && s.y === head.y)) {
+            gameOver(); return;
+        }
+        snake.unshift(head);
+        if (head.x === food.x && head.y === food.y) {
+            score++; document.getElementById("scoreText").innerText = score; playSound('eat'); placeFood();
+        } else { snake.pop(); }
+        draw();
+    }
+
+    // 🔥 [핵심 수정] 뱀을 매끄럽게 그리는 로직 🔥
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 사과 그리기
+        const fx = food.x * TILE_SIZE + TILE_SIZE/2; const fy = food.y * TILE_SIZE + TILE_SIZE/2; const r = TILE_SIZE/2 - 4;
+        ctx.fillStyle = "rgba(0,0,0,0.15)"; ctx.beginPath(); ctx.arc(fx, fy + 3, r, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = "#e7471d"; ctx.beginPath(); ctx.arc(fx, fy, r, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = "#578a34"; ctx.beginPath(); ctx.ellipse(fx, fy - r, 6, 3, Math.PI / 4, 0, Math.PI * 2); ctx.fill();
+
+        // 뱀 그리기 (연결 부위 자연스럽게)
+        snake.forEach((part, index) => {
+            const px = part.x * TILE_SIZE;
+            const py = part.y * TILE_SIZE;
+            const size = TILE_SIZE;
+            // 뱀 두께는 타일보다 약간 작게 (구글 스타일)
+            const padding = 2; 
+            const snakeSize = size - padding * 2;
+            const borderRadius = snakeSize / 2; // 완전 둥글게
+
+            if (index === 0) ctx.fillStyle = "#4674E9"; // 머리색
+            else ctx.fillStyle = "#5c8aef"; // 몸통색
+
+            // 1. 기본 둥근 사각형 그리기
+            ctx.beginPath();
+            ctx.roundRect(px + padding, py + padding, snakeSize, snakeSize, borderRadius);
+            ctx.fill();
+
+            // 2. 연결 부위 채우기 (다음 몸통이 있으면 사이를 메움)
+            if (index < snake.length - 1) {
+                const nextPart = snake[index + 1];
+                if (nextPart.x > part.x) { // 다음이 오른쪽
+                    ctx.fillRect(px + size/2, py + padding, size/2, snakeSize);
+                } else if (nextPart.x < part.x) { // 다음이 왼쪽
+                    ctx.fillRect(px, py + padding, size/2, snakeSize);
+                } else if (nextPart.y > part.y) { // 다음이 아래
+                    ctx.fillRect(px + padding, py + size/2, snakeSize, size/2);
+                } else if (nextPart.y < part.y) { // 다음이 위
+                    ctx.fillRect(px + padding, py, snakeSize, size/2);
+                }
+            }
+
+            // 눈 그리기 (머리만)
+            if (index === 0) {
+                ctx.fillStyle = "white";
+                let eyeOffsetX = 0, eyeOffsetY = 0;
+                if(velocity.x === 1) eyeOffsetX = 8; if(velocity.x === -1) eyeOffsetX = -8;
+                if(velocity.y === 1) eyeOffsetY = 8; if(velocity.y === -1) eyeOffsetY = -8;
+                const cx = px + size/2; const cy = py + size/2;
+                let ex1, ey1, ex2, ey2;
+                if (velocity.x !== 0) { ex1 = cx + eyeOffsetX; ey1 = cy - 7; ex2 = cx + eyeOffsetX; ey2 = cy + 7; } 
+                else { ex1 = cx - 7; ey1 = cy + eyeOffsetY; ex2 = cx + 7; ey2 = cy + eyeOffsetY; }
+                ctx.beginPath(); ctx.arc(ex1, ey1, 4.5, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(ex2, ey2, 4.5, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = "black";
+                ctx.beginPath(); ctx.arc(ex1 + velocity.x*2, ey1 + velocity.y*2, 2, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(ex2 + velocity.x*2, ey2 + velocity.y*2, 2, 0, Math.PI*2); ctx.fill();
+            }
+        });
+    }
+
+    function gameOver() {
+        isRunning = false; clearInterval(gameLoopId); playSound('die');
+        canvas.style.transform = "translate(4px, 4px)"; setTimeout(() => canvas.style.transform = "translate(-4px, -4px)", 50); setTimeout(() => canvas.style.transform = "translate(0, 0)", 100);
+        document.getElementById("finalScore").innerText = score;
+        document.getElementById("gameOverScreen").classList.remove("hidden");
+        fetch('/api/save_score', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({score: score}) });
+    }
+
+    document.addEventListener("keydown", (e) => {
+        if (!isRunning) return;
+        const k = e.key;
+        if (k === "ArrowUp" || k === "w") inputQueue.push('UP');
+        else if (k === "ArrowDown" || k === "s") inputQueue.push('DOWN');
+        else if (k === "ArrowLeft" || k === "a") inputQueue.push('LEFT');
+        else if (k === "ArrowRight" || k === "d") inputQueue.push('RIGHT');
+    });
+
+    function showRanking() {
+        document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
+        document.getElementById("rankingScreen").classList.remove("hidden");
+        const list = document.getElementById("rankList");
+        list.innerHTML = '<div style="text-align:center; margin-top:30px;">로딩중...</div>';
+        fetch('/api/get_rankings').then(r=>r.json()).then(d=>{
+            list.innerHTML = "";
+            if (!d || d.length === 0) { list.innerHTML = '<div style="text-align:center; margin-top:30px;">랭킹 없음</div>'; return; }
+            d.forEach((item, i) => {
+                let medal = `<span class="medal">${i+1}</span>`;
+                if(i===0) medal = '<span class="medal">🥇</span>'; if(i===1) medal = '<span class="medal">🥈</span>'; if(i===2) medal = '<span class="medal">🥉</span>';
+                const row = document.createElement("div"); row.className = "rank-row";
+                row.innerHTML = `${medal}<div class="rank-name">${item.username || '익명'}<span class="user-grade">${item.grade || '일반'}</span></div><span class="rank-score">${item.score}</span>`;
+                list.appendChild(row);
+            });
+        });
+    }
+
+    function closeRanking() {
+        document.getElementById("rankingScreen").classList.add("hidden");
+        if (!isRunning && score === 0) document.getElementById("startScreen").classList.remove("hidden");
+        else document.getElementById("gameOverScreen").classList.remove("hidden");
+    }
+</script>
+</body>
+</html>
