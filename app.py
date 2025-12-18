@@ -9,10 +9,16 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__)
 app.secret_key = 'hack_sns_secure_key'
 
-# [Supabase 설정]
+# [Supabase 설정] - 사용자분이 주신 키 적용
 SUPABASE_URL = "https://porctgadcosjzgpkxiqw.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvcmN0Z2FkY29zanpncGt4aXF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwMzc4MjYsImV4cCI6MjA4MTYxMzgyNn0.QmB0BnyLAYY0Rt3-fffExHQt4BGgWWr7USc5V9qbA2c"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# [보안] 허용된 파일 확장자 (이미지 + 동영상)
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'webm'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # ===========================
 # [메인 & 게시판]
@@ -20,7 +26,6 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 @app.route('/')
 def index():
     try:
-        # view_count도 같이 가져옴
         response = supabase.table("posts").select("*, users(username)").order("id", desc=True).execute()
         posts = response.data
     except Exception as e:
@@ -33,24 +38,22 @@ def index():
 # ===========================
 @app.route('/post/<int:post_id>')
 def post_detail(post_id):
-    # 1. 글 정보 가져오기
     post_res = supabase.table("posts").select("*, users(username)").eq("id", post_id).execute()
     if not post_res.data: return "글이 삭제되었거나 없습니다."
     post = post_res.data[0]
 
-    # 2. 🔥 조회수 1 증가 로직 (새로고침 할 때마다 오름) 🔥
+    # 조회수 증가
     new_views = post.get('view_count', 0) + 1
     supabase.table("posts").update({"view_count": new_views}).eq("id", post_id).execute()
-    post['view_count'] = new_views # 화면에도 반영
+    post['view_count'] = new_views
 
-    # 3. 🔥 좋아요/싫어요 개수 계산 🔥
+    # 좋아요 정보 가져오기
     votes_res = supabase.table("likes").select("*").eq("post_id", post_id).execute()
     votes = votes_res.data
     
     like_count = len([v for v in votes if v['vote_type'] == 'like'])
     dislike_count = len([v for v in votes if v['vote_type'] == 'dislike'])
     
-    # 4. 내가 뭘 눌렀는지 확인 (버튼 색칠용)
     my_vote = None
     if 'user_id' in session:
         for v in votes:
@@ -58,7 +61,7 @@ def post_detail(post_id):
                 my_vote = v['vote_type']
                 break
     
-    # 5. 댓글 가져오기
+    # 댓글 가져오기
     comment_res = supabase.table("comments").select("*, users(username)").eq("post_id", post_id).order("id").execute()
     all_comments = comment_res.data
     parents = [c for c in all_comments if c['parent_id'] is None]
@@ -68,48 +71,37 @@ def post_detail(post_id):
                            like_count=like_count, dislike_count=dislike_count, my_vote=my_vote)
 
 # ===========================
-# [투표 기능 (새로고침 없는 버전)]
+# [투표 기능 (AJAX - 새로고침 없음)]
 # ===========================
 @app.route('/vote/<int:post_id>/<vote_type>')
 def vote(post_id, vote_type):
     if 'user_id' not in session: 
-        # 로그인 안 했으면 에러 메시지(401) 보냄 -> 자바스크립트가 받아서 로그인 창으로 보냄
         return jsonify({'result': 'fail', 'msg': 'login_required'}), 401
     
     user_id = session['user_id']
-    
-    # 1. 기존 투표 확인 및 로직 수행
     existing = supabase.table("likes").select("*").eq("user_id", user_id).eq("post_id", post_id).execute()
     
     if existing.data:
         old_vote = existing.data[0]['vote_type']
         if old_vote == vote_type:
-            # 같은 거 또 누름 -> 취소 (삭제)
             supabase.table("likes").delete().eq("id", existing.data[0]['id']).execute()
         else:
-            # 다른 거 누름 -> 변경
             supabase.table("likes").update({"vote_type": vote_type}).eq("id", existing.data[0]['id']).execute()
     else:
-        # 없음 -> 추가
-        supabase.table("likes").insert({
-            "user_id": user_id, "post_id": post_id, "vote_type": vote_type
-        }).execute()
+        supabase.table("likes").insert({"user_id": user_id, "post_id": post_id, "vote_type": vote_type}).execute()
     
-    # 2. 🔥 중요: 업데이트된 숫자를 다시 세서 보내줌 🔥
+    # 최신 카운트 반환
     votes_res = supabase.table("likes").select("*").eq("post_id", post_id).execute()
     votes = votes_res.data
-    
     new_like_count = len([v for v in votes if v['vote_type'] == 'like'])
     new_dislike_count = len([v for v in votes if v['vote_type'] == 'dislike'])
     
-    # 내 현재 상태 확인
     current_my_vote = None
     for v in votes:
         if v['user_id'] == user_id:
             current_my_vote = v['vote_type']
             break
 
-    # 화면 이동(redirect) 하지 않고, 데이터만 쏙 보냄 (JSON)
     return jsonify({
         'result': 'success',
         'like_count': new_like_count,
@@ -117,6 +109,44 @@ def vote(post_id, vote_type):
         'my_vote': current_my_vote
     })
 
+# ===========================
+# [글쓰기 (파일 업로드 보안 적용)]
+# ===========================
+@app.route('/write', methods=['POST'])
+def write():
+    if 'user_id' not in session: return redirect(url_for('login'))
+    
+    title = request.form['title']
+    content = request.form['content']
+    file = request.files.get('file')
+    image_url = None
+
+    if file and file.filename != '':
+        if allowed_file(file.filename):
+            try:
+                filename = secure_filename(file.filename)
+                timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+                file_path = f"{session['user_id']}_{timestamp}_{filename}"
+                file_content = file.read()
+                
+                # 파일 타입(MIME) 감지하여 업로드
+                content_type = file.content_type
+                supabase.storage.from_("images").upload(file_path, file_content, {"content-type": content_type})
+                image_url = supabase.storage.from_("images").get_public_url(file_path)
+            except Exception as e:
+                print(f"업로드 에러: {e}")
+        else:
+            print("허용되지 않은 파일 형식입니다.")
+
+    supabase.table("posts").insert({
+        "title": title, "content": content, "image_url": image_url, "author_id": session['user_id']
+    }).execute()
+    
+    return redirect(url_for('index'))
+
+# ===========================
+# [회원가입 / 로그인 / 기타]
+# ===========================
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -166,22 +196,6 @@ def settings():
             msg = "✅ 변경 완료!"
     return render_template('settings.html', msg=msg)
 
-@app.route('/write', methods=['POST'])
-def write():
-    if 'user_id' not in session: return redirect(url_for('login'))
-    title = request.form['title']; content = request.form['content']; file = request.files.get('file'); image_url = None
-    if file and file.filename != '':
-        try:
-            filename = secure_filename(file.filename)
-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-            file_path = f"{session['user_id']}_{timestamp}_{filename}"
-            file_content = file.read()
-            supabase.storage.from_("images").upload(file_path, file_content, {"content-type": file.content_type})
-            image_url = supabase.storage.from_("images").get_public_url(file_path)
-        except Exception as e: print(f"이미지 업로드 실패: {e}")
-    supabase.table("posts").insert({"title": title, "content": content, "image_url": image_url, "author_id": session['user_id']}).execute()
-    return redirect(url_for('index'))
-
 @app.route('/comment/<int:post_id>', methods=['POST'])
 def add_comment(post_id):
     if 'user_id' not in session: return redirect(url_for('login'))
@@ -216,6 +230,7 @@ def delete(post_id):
     if session.get('is_admin'): return redirect(url_for('admin_list'))
     return redirect(url_for('index'))
 
+# 관리자 관련 (필요하면 추가/유지)
 @app.route('/admin')
 def admin_list():
     if not session.get('is_admin'): return redirect(url_for('index'))
@@ -244,12 +259,6 @@ def admin_update_password(user_id):
     supabase.table("users").update({"password": hashed_pw}).eq("id", user_id).execute()
     return redirect(url_for('admin_user_detail', user_id=user_id))
 
-# 기존 코드:
-# if __name__ == '__main__':
-#     app.run(debug=True)
-
-# 👇 이렇게 수정하세요!
 if __name__ == '__main__':
-    # host='0.0.0.0' => 외부 접속 허용
-    # port=5000 => 포트 번호 명시
+    # 🔥 모바일(외부) 접속 허용을 위해 0.0.0.0 설정 🔥
     app.run(host='0.0.0.0', port=5000, debug=True)

@@ -8,7 +8,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* 이미지: 화면보다 크면 줄어들고, 최대 높이 500px 제한, 비율 유지 */
         .detail-img {
             max-width: 100%;
             height: auto;
@@ -17,7 +16,6 @@
             border-radius: 10px;
         }
 
-        /* 본문: 줄바꿈 유지, 긴 단어 자동 줄바꿈, 글자 크기 키움 */
         .post-content {
             font-size: 1.1rem;
             line-height: 1.7;
@@ -32,23 +30,23 @@
     <div class="container py-4">
         <div class="row justify-content-center">
             <div class="col-12 col-lg-8">
-                <a href="/" class="text-decoration-none text-muted mb-3 d-inline-block fw-bold">&larr; 목록으로 돌아가기</a>
+                <a href="/" class="text-decoration-none text-muted mb-3 d-inline-block fw-bold">&larr; 목록으로</a>
 
                 <div class="card shadow-sm mb-4 border-0">
                     <div class="card-body p-3 p-md-4">
                         <h3 class="fw-bold mb-3">{{ post.title }}</h3>
-
                         <div class="d-flex justify-content-between text-muted border-bottom pb-3 mb-3 small">
                             <span><i class="fas fa-user"></i> {{ post.users.username }}</span>
-                            <span>
-                                <i class="fas fa-eye"></i> {{ post.view_count }} ·
-                                {{ post.created_at[:16] }}
-                            </span>
+                            <span><i class="fas fa-eye"></i> {{ post.view_count }} · {{ post.created_at[:16] }}</span>
                         </div>
 
                         {% if post.image_url %}
                         <div class="mb-4 text-center bg-dark rounded p-2">
-                            <img src="{{ post.image_url }}" class="detail-img" alt="attached image">
+                            {% if '.mp4' in post.image_url or '.mov' in post.image_url or '.webm' in post.image_url %}
+                            <video src="{{ post.image_url }}" class="detail-img" controls playsinline></video>
+                            {% else %}
+                            <img src="{{ post.image_url }}" class="detail-img" alt="media">
+                            {% endif %}
                         </div>
                         {% endif %}
 
@@ -57,46 +55,39 @@
                         <div class="d-flex justify-content-center gap-2 mt-5">
                             <button onclick="sendVote('like')" id="btn-like"
                                 class="btn {% if my_vote == 'like' %}btn-primary{% else %}btn-outline-primary{% endif %} px-4 py-2 rounded-pill flex-grow-1 flex-md-grow-0">
-                                <i class="fas fa-thumbs-up"></i> <span class="d-none d-sm-inline">좋아요</span>
-                                <span id="count-like">{{ like_count }}</span>
+                                <i class="fas fa-thumbs-up"></i> <span class="d-none d-sm-inline">좋아요</span> <span
+                                    id="count-like">{{ like_count }}</span>
                             </button>
-
                             <button onclick="sendVote('dislike')" id="btn-dislike"
                                 class="btn {% if my_vote == 'dislike' %}btn-danger{% else %}btn-outline-danger{% endif %} px-4 py-2 rounded-pill flex-grow-1 flex-md-grow-0">
-                                <i class="fas fa-thumbs-down"></i> <span class="d-none d-sm-inline">싫어요</span>
-                                <span id="count-dislike">{{ dislike_count }}</span>
+                                <i class="fas fa-thumbs-down"></i> <span class="d-none d-sm-inline">싫어요</span> <span
+                                    id="count-dislike">{{ dislike_count }}</span>
                             </button>
                         </div>
 
                         {% if session.get('user_id') == post.author_id %}
                         <div class="text-end mt-4">
                             <a href="/delete/{{ post.id }}" class="btn btn-outline-danger btn-sm"
-                                onclick="return confirm('정말 삭제하시겠습니까? 복구할 수 없습니다.')">삭제</a>
+                                onclick="return confirm('삭제하시겠습니까?')">삭제</a>
                         </div>
                         {% endif %}
                     </div>
                 </div>
 
                 <div class="card shadow-sm border-0">
-                    <div class="card-header bg-white fw-bold py-3">
-                        <i class="far fa-comment-dots"></i> 댓글
-                    </div>
+                    <div class="card-header bg-white fw-bold py-3"><i class="far fa-comment-dots"></i> 댓글</div>
                     <div class="list-group list-group-flush">
                         {% for parent in parents %}
                         <div class="list-group-item bg-white p-3">
                             <div class="d-flex justify-content-between">
                                 <strong>{{ parent.users.username }}</strong>
-                                <small class="text-muted">{{ parent.created_at[:16] }}</small>
+                                <small class="text-muted">{{ parent.created_at[:10] }}</small>
                             </div>
                             <p class="mb-2 mt-1">{{ parent.content }}</p>
-
                             {% if session.get('user_id') %}
                             <button class="btn btn-sm btn-link text-decoration-none p-0 mb-2" type="button"
-                                data-bs-toggle="collapse" data-bs-target="#replyForm{{ parent.id }}">
-                                ↪ 답글 달기
-                            </button>
+                                data-bs-toggle="collapse" data-bs-target="#replyForm{{ parent.id }}">↪ 답글</button>
                             {% endif %}
-
                             {% for reply in replies %}
                             {% if reply.parent_id == parent.id %}
                             <div
@@ -104,7 +95,7 @@
                                 <div class="w-100">
                                     <div class="d-flex justify-content-between">
                                         <small class="fw-bold text-primary">{{ reply.users.username }}</small>
-                                        <small class="text-muted" style="font-size: 0.75rem;">{{ reply.created_at[:16]
+                                        <small class="text-muted" style="font-size: 0.75rem;">{{ reply.created_at[:10]
                                             }}</small>
                                     </div>
                                     <p class="mb-0 small">{{ reply.content }}</p>
@@ -112,79 +103,48 @@
                             </div>
                             {% endif %}
                             {% endfor %}
-
                             <div class="collapse mt-2" id="replyForm{{ parent.id }}">
                                 <form action="/comment/{{ post.id }}" method="POST" class="d-flex gap-2">
                                     <input type="hidden" name="parent_id" value="{{ parent.id }}">
                                     <input type="text" name="content" class="form-control form-control-sm"
-                                        placeholder="답글 내용을 입력하세요..." required>
+                                        placeholder="답글 입력" required>
                                     <button class="btn btn-sm btn-secondary text-nowrap">등록</button>
                                 </form>
                             </div>
                         </div>
                         {% else %}
-                        <div class="p-4 text-center text-muted">아직 댓글이 없습니다. 첫 번째 댓글을 남겨보세요!</div>
+                        <div class="p-4 text-center text-muted">댓글이 없습니다.</div>
                         {% endfor %}
                     </div>
-
                     {% if session.get('user_id') %}
                     <div class="card-body border-top bg-light p-3">
                         <form action="/comment/{{ post.id }}" method="POST" class="d-flex gap-2">
-                            <input type="text" name="content" class="form-control" placeholder="댓글을 입력하세요..." required>
+                            <input type="text" name="content" class="form-control" placeholder="댓글 입력..." required>
                             <button class="btn btn-primary">등록</button>
                         </form>
                     </div>
                     {% else %}
-                    <div class="card-body text-center py-4">
-                        <a href="/login" class="fw-bold text-decoration-none">로그인</a> 후 댓글을 작성할 수 있습니다.
-                    </div>
+                    <div class="card-body text-center py-4"><a href="/login" class="fw-bold">로그인</a> 후 댓글 작성 가능</div>
                     {% endif %}
                 </div>
             </div>
         </div>
     </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
     <script>
         function sendVote(type) {
-            // 서버에 비동기 요청 (화면 이동 X)
-            fetch(`/vote/{{ post.id }}/${type}`)
-                .then(response => {
-                    if (response.status === 401) {
-                        alert("로그인이 필요합니다!");
-                        window.location.href = "/login";
-                        return null;
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (!data) return; // 에러면 중단
-
-                    // 1. 숫자 업데이트
-                    document.getElementById('count-like').innerText = data.like_count;
-                    document.getElementById('count-dislike').innerText = data.dislike_count;
-
-                    // 2. 버튼 스타일 가져오기
-                    const btnLike = document.getElementById('btn-like');
-                    const btnDislike = document.getElementById('btn-dislike');
-
-                    // 일단 둘 다 빈 껍데기(outline)로 초기화
-                    // (Bootstrap 클래스명은 너무 길어서 변수로 관리하는 게 좋지만, 직관성을 위해 풀어서 씀)
-                    btnLike.className = "btn btn-outline-primary px-4 py-2 rounded-pill flex-grow-1 flex-md-grow-0";
-                    btnDislike.className = "btn btn-outline-danger px-4 py-2 rounded-pill flex-grow-1 flex-md-grow-0";
-
-                    // 3. 현재 내 투표 상태에 따라 색칠하기
-                    if (data.my_vote === 'like') {
-                        btnLike.className = "btn btn-primary px-4 py-2 rounded-pill flex-grow-1 flex-md-grow-0";
-                    } else if (data.my_vote === 'dislike') {
-                        btnDislike.className = "btn btn-danger px-4 py-2 rounded-pill flex-grow-1 flex-md-grow-0";
-                    }
-                })
-                .catch(error => console.error('Error:', error));
+            fetch(`/vote/{{ post.id }}/${type}`).then(r => r.status === 401 ? (alert("로그인 필요"), window.location = "/login") : r.json()).then(d => {
+                if (!d) return;
+                document.getElementById('count-like').innerText = d.like_count;
+                document.getElementById('count-dislike').innerText = d.dislike_count;
+                const btnLike = document.getElementById('btn-like'), btnDislike = document.getElementById('btn-dislike');
+                btnLike.className = "btn btn-outline-primary px-4 py-2 rounded-pill flex-grow-1 flex-md-grow-0";
+                btnDislike.className = "btn btn-outline-danger px-4 py-2 rounded-pill flex-grow-1 flex-md-grow-0";
+                if (d.my_vote === 'like') btnLike.className = "btn btn-primary px-4 py-2 rounded-pill flex-grow-1 flex-md-grow-0";
+                else if (d.my_vote === 'dislike') btnDislike.className = "btn btn-danger px-4 py-2 rounded-pill flex-grow-1 flex-md-grow-0";
+            });
         }
     </script>
-
 </body>
 
 </html>

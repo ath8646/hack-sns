@@ -17,48 +17,29 @@
 </head>
 
 <body>
-
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-12 col-md-6 col-lg-4">
-
                 <div class="text-center mb-4">
                     <h2 class="fw-bold">🔐 로그인</h2>
-                    <p class="text-muted">Secure Community에 오신 것을 환영합니다.</p>
                 </div>
-
                 <div class="card shadow-sm border-0">
                     <div class="card-body p-4">
-                        {% if error %}
-                        <div class="alert alert-danger text-center p-2 small">{{ error }}</div>
-                        {% endif %}
-
+                        {% if error %}<div class="alert alert-danger text-center p-2 small">{{ error }}</div>{% endif %}
                         <form action="/login" method="POST">
-                            <div class="mb-3">
-                                <label class="form-label fw-bold small text-muted">아이디</label>
-                                <input type="text" name="username" class="form-control form-control-lg"
-                                    placeholder="Username" required>
-                            </div>
-                            <div class="mb-4">
-                                <label class="form-label fw-bold small text-muted">비밀번호</label>
-                                <input type="password" name="password" class="form-control form-control-lg"
-                                    placeholder="Password" required>
-                            </div>
+                            <div class="mb-3"><label class="fw-bold small text-muted">아이디</label><input type="text"
+                                    name="username" class="form-control form-control-lg" required></div>
+                            <div class="mb-4"><label class="fw-bold small text-muted">비밀번호</label><input type="password"
+                                    name="password" class="form-control form-control-lg" required></div>
                             <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold">로그인</button>
                         </form>
                     </div>
                 </div>
-
-                <div class="text-center mt-3">
-                    <p class="text-muted small">아직 계정이 없으신가요? <a href="/register"
-                            class="text-decoration-none fw-bold">회원가입</a></p>
-                    <a href="/" class="text-secondary small text-decoration-none">&larr; 홈으로 돌아가기</a>
-                </div>
-
+                <div class="text-center mt-3"><a href="/register" class="fw-bold text-decoration-none">회원가입</a> | <a
+                        href="/" class="text-secondary text-decoration-none">홈으로</a></div>
             </div>
         </div>
     </div>
-
 </body>
 
 </html>

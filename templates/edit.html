@@ -17,38 +17,28 @@
 </head>
 
 <body>
-
     <div class="container py-5">
         <div class="row justify-content-center">
             <div class="col-12 col-md-8 col-lg-6">
-
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h3 class="fw-bold m-0">✏️ 글 수정하기</h3>
-                    <a href="/" class="btn btn-outline-secondary btn-sm">취소</a>
+                    <h3 class="fw-bold m-0">✏️ 글 수정</h3><a href="/" class="btn btn-outline-secondary btn-sm">취소</a>
                 </div>
-
                 <div class="card shadow-sm border-0">
                     <div class="card-body p-4">
                         <form action="/edit/{{ post.id }}" method="POST">
-                            <div class="mb-3">
-                                <label class="form-label fw-bold small text-muted">제목</label>
-                                <input type="text" name="title" class="form-control form-control-lg"
-                                    value="{{ post.title }}" required>
+                            <div class="mb-3"><label class="fw-bold small text-muted">제목</label><input type="text"
+                                    name="title" class="form-control form-control-lg" value="{{ post.title }}" required>
                             </div>
-                            <div class="mb-4">
-                                <label class="form-label fw-bold small text-muted">내용</label>
-                                <textarea name="content" class="form-control form-control-lg" rows="8"
-                                    required>{{ post.content }}</textarea>
+                            <div class="mb-4"><label class="fw-bold small text-muted">내용</label><textarea name="content"
+                                    class="form-control form-control-lg" rows="8" required>{{ post.content }}</textarea>
                             </div>
                             <button type="submit" class="btn btn-primary w-100 btn-lg fw-bold">수정 완료</button>
                         </form>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>
-
 </body>
 
 </html>
