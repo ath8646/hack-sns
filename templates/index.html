@@ -126,7 +126,7 @@
         background-color: #0d6efd;
       }
 
-      .grade-badge[data-grade="골드 회원"] {
+      .grade-badge[data-grade="골드"] {
         background-color: #ffd700;
         color: #000;
         border: 1px solid #e0c200;
@@ -134,13 +134,13 @@
         box-shadow: 0 0 8px rgba(255, 215, 0, 0.7);
       }
 
-      .grade-badge[data-grade="다이아몬드 회원"] {
+      .grade-badge[data-grade="다이아몬드"] {
         background-color: #00e1ff;
         color: #fff;
         box-shadow: 0 0 5px #00e1ff;
       }
 
-      .grade-badge[data-grade="너 짱 최고 회원"] {
+      .grade-badge[data-grade="너 짱 최고"] {
         background: linear-gradient(
           45deg,
           #ff0000,
@@ -265,9 +265,9 @@
               {% else %}
               <span
                 class="grade-badge"
-                data-grade="{{ session.get('grade') or '일반 회원' }}"
+                data-grade="{{ session.get('grade') or '일반' }}"
               >
-                {{ session.get('grade') or '일반 회원' }}
+                {{ session.get('grade') or '일반' }}
               </span>
               {% endif %}
             </span>
@@ -410,8 +410,8 @@
                   <i class="fas fa-user-circle"></i> {{ post.users.username }}
                   <span
                     class="grade-badge"
-                    data-grade="{{ post.users.grade or '일반 회원' }}"
-                    >{{ post.users.grade or '일반 회원' }}</span
+                    data-grade="{{ post.users.grade or '일반' }}"
+                    >{{ post.users.grade or '일반' }}</span
                   >
                   ·
                   <span class="time-ago" data-date="{{ post.created_at }}"
