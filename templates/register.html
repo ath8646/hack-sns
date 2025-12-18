@@ -3,86 +3,66 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>회원가입</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
             background-color: #f0f2f5;
-            height: 100vh;
             display: flex;
             align-items: center;
-            justify-content: center;
-        }
-
-        .register-card {
-            width: 100%;
-            max-width: 400px;
-            padding: 2rem;
-            border-radius: 15px;
-            border: none;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-        }
-
-        .error-msg {
-            font-size: 0.85rem;
-            margin-top: 5px;
-            display: block;
+            min-height: 100vh;
         }
     </style>
 </head>
 
 <body>
-    <div class="card register-card bg-white">
-        <h3 class="text-center mb-4 fw-bold text-success">회원가입</h3>
 
-        <form method="POST">
-            <div class="mb-3">
-                <label class="form-label text-muted small">사용할 아이디</label>
-                <input type="text" name="username" class="form-control" placeholder="아이디 입력"
-                    value="{{ username or '' }}" required>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-6 col-lg-4">
 
-                {% if username_error %}
-                <span class="error-msg text-danger fw-bold">{{ username_error }}</span>
-                {% endif %}
+                <div class="text-center mb-4">
+                    <h2 class="fw-bold">📝 회원가입</h2>
+                    <p class="text-muted">나만의 안전한 계정을 만들어보세요.</p>
+                </div>
+
+                <div class="card shadow-sm border-0">
+                    <div class="card-body p-4">
+                        <form action="/register" method="POST">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small text-muted">아이디</label>
+                                <input type="text" name="username" class="form-control form-control-lg"
+                                    placeholder="사용할 아이디" value="{{ username if username else '' }}" required>
+                                {% if username_error %}
+                                <div class="text-danger small mt-1"><i class="fas fa-exclamation-circle"></i> {{
+                                    username_error }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label fw-bold small text-muted">비밀번호</label>
+                                <input type="password" name="password" class="form-control form-control-lg"
+                                    placeholder="특수문자 포함 필수" required>
+                                {% if password_error %}
+                                <div class="text-danger small mt-1"><i class="fas fa-exclamation-circle"></i> {{
+                                    password_error }}</div>
+                                {% endif %}
+                            </div>
+                            <button type="submit" class="btn btn-success btn-lg w-100 fw-bold">가입하기</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="text-center mt-3">
+                    <p class="text-muted small">이미 계정이 있으신가요? <a href="/login"
+                            class="text-decoration-none fw-bold">로그인</a></p>
+                    <a href="/" class="text-secondary small text-decoration-none">&larr; 홈으로 돌아가기</a>
+                </div>
+
             </div>
-
-            <div class="mb-4">
-                <label class="form-label text-muted small">비밀번호</label>
-                <input type="password" id="passwordInput" name="password" class="form-control" placeholder="비밀번호 입력"
-                    required oninput="checkPassword()">
-
-                {% if password_error %}
-                <span id="pwMsg" class="error-msg text-danger">{{ password_error }}</span>
-                {% else %}
-                <span id="pwMsg" class="error-msg text-danger">* 특수문자(!@# 등) 하나 이상 포함 필수</span>
-                {% endif %}
-            </div>
-
-            <button class="btn btn-success w-100 py-2">가입하기</button>
-        </form>
-        <div class="text-center mt-3">
-            <a href="/login" class="text-decoration-none small">이미 계정이 있나요? 로그인</a>
         </div>
     </div>
 
-    <script>
-        function checkPassword() {
-            const pw = document.getElementById('passwordInput').value;
-            const msg = document.getElementById('pwMsg');
-
-            // 특수문자 체크 정규식
-            const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(pw);
-
-            if (hasSpecialChar) {
-                msg.className = 'error-msg text-muted'; // 회색으로 변경
-                msg.innerText = "✔ 특수문자 조건 충족됨";
-            } else {
-                msg.className = 'error-msg text-danger'; // 빨간색 유지
-                msg.innerText = "* 특수문자(!@# 등) 하나 이상 포함 필수";
-            }
-        }
-    </script>
-
 </body>
 
-</html> 
+</html>

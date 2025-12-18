@@ -1,7 +1,7 @@
 import re
 import os
 from datetime import datetime
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from supabase import create_client, Client
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
@@ -68,40 +68,54 @@ def post_detail(post_id):
                            like_count=like_count, dislike_count=dislike_count, my_vote=my_vote)
 
 # ===========================
-# [투표 기능 (좋아요/싫어요)]
+# [투표 기능 (새로고침 없는 버전)]
 # ===========================
 @app.route('/vote/<int:post_id>/<vote_type>')
 def vote(post_id, vote_type):
     if 'user_id' not in session: 
-        return redirect(url_for('login')) # 로그인 안했으면 로그인 창으로
+        # 로그인 안 했으면 에러 메시지(401) 보냄 -> 자바스크립트가 받아서 로그인 창으로 보냄
+        return jsonify({'result': 'fail', 'msg': 'login_required'}), 401
     
     user_id = session['user_id']
     
-    # 기존 투표 확인
+    # 1. 기존 투표 확인 및 로직 수행
     existing = supabase.table("likes").select("*").eq("user_id", user_id).eq("post_id", post_id).execute()
     
     if existing.data:
-        # 이미 투표한 기록이 있는 경우
         old_vote = existing.data[0]['vote_type']
         if old_vote == vote_type:
-            # 같은 걸 또 누르면 -> 취소 (삭제)
+            # 같은 거 또 누름 -> 취소 (삭제)
             supabase.table("likes").delete().eq("id", existing.data[0]['id']).execute()
         else:
-            # 다른 걸 누르면 -> 변경 (Update)
+            # 다른 거 누름 -> 변경
             supabase.table("likes").update({"vote_type": vote_type}).eq("id", existing.data[0]['id']).execute()
     else:
-        # 투표한 적 없으면 -> 추가 (Insert)
+        # 없음 -> 추가
         supabase.table("likes").insert({
             "user_id": user_id, "post_id": post_id, "vote_type": vote_type
         }).execute()
-        
-    return redirect(url_for('post_detail', post_id=post_id))
+    
+    # 2. 🔥 중요: 업데이트된 숫자를 다시 세서 보내줌 🔥
+    votes_res = supabase.table("likes").select("*").eq("post_id", post_id).execute()
+    votes = votes_res.data
+    
+    new_like_count = len([v for v in votes if v['vote_type'] == 'like'])
+    new_dislike_count = len([v for v in votes if v['vote_type'] == 'dislike'])
+    
+    # 내 현재 상태 확인
+    current_my_vote = None
+    for v in votes:
+        if v['user_id'] == user_id:
+            current_my_vote = v['vote_type']
+            break
 
-# ===========================
-# [나머지 기능 (기존 유지)]
-# ===========================
-# ... 로그인, 회원가입, 글쓰기, 수정, 삭제, 관리자 등 기존 코드 그대로 유지 ...
-# (아래 코드는 생략되었으니 기존 app.py의 나머지 부분을 꼭 유지해주세요!)
+    # 화면 이동(redirect) 하지 않고, 데이터만 쏙 보냄 (JSON)
+    return jsonify({
+        'result': 'success',
+        'like_count': new_like_count,
+        'dislike_count': new_dislike_count,
+        'my_vote': current_my_vote
+    })
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -230,5 +244,12 @@ def admin_update_password(user_id):
     supabase.table("users").update({"password": hashed_pw}).eq("id", user_id).execute()
     return redirect(url_for('admin_user_detail', user_id=user_id))
 
+# 기존 코드:
+# if __name__ == '__main__':
+#     app.run(debug=True)
+
+# 👇 이렇게 수정하세요!
 if __name__ == '__main__':
-    app.run(debug=True)
+    # host='0.0.0.0' => 외부 접속 허용
+    # port=5000 => 포트 번호 명시
+    app.run(host='0.0.0.0', port=5000, debug=True)
