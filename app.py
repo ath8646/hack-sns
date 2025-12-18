@@ -9,54 +9,55 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__)
 app.secret_key = 'hack_sns_secure_key'
 
-# [Supabase 설정] - 사용자분이 주신 키 적용
+# [Supabase 설정]
 SUPABASE_URL = "https://porctgadcosjzgpkxiqw.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvcmN0Z2FkY29zanpncGt4aXF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwMzc4MjYsImV4cCI6MjA4MTYxMzgyNn0.QmB0BnyLAYY0Rt3-fffExHQt4BGgWWr7USc5V9qbA2c"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# [보안] 허용된 파일 확장자 (이미지 + 동영상)
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'webm'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # ===========================
-# [메인 & 게시판]
+# [메인 페이지]
 # ===========================
 @app.route('/')
 def index():
     try:
-        response = supabase.table("posts").select("*, users(username)").order("id", desc=True).execute()
+        # 공지사항
+        notices_res = supabase.table("notices").select("*").order("id", desc=True).execute()
+        
+        # 게시글 (작성자의 grade 포함)
+        # users(username, is_admin, grade) <- grade 추가됨
+        response = supabase.table("posts").select("*, users(username, is_admin, grade)").order("id", desc=True).execute()
         posts = response.data
     except Exception as e:
         print(e)
         posts = []
-    return render_template('index.html', posts=posts)
+        notices_res = type('obj', (object,), {'data': []})
+        
+    return render_template('index.html', posts=posts, notices=notices_res.data)
 
 # ===========================
-# [글 상세 보기 (조회수 & 좋아요)]
+# [상세 페이지]
 # ===========================
-# app.py 의 post_detail 함수 부분
-
 @app.route('/post/<int:post_id>')
 def post_detail(post_id):
-    post_res = supabase.table("posts").select("*, users(username)").eq("id", post_id).execute()
+    # 작성자 정보에 grade 추가
+    post_res = supabase.table("posts").select("*, users(username, is_admin, grade)").eq("id", post_id).execute()
     if not post_res.data: return "글이 삭제되었거나 없습니다."
     post = post_res.data[0]
 
-    # 🔥 [수정됨] 무한 루프 방지 로직 🔥
-    # 요청 주소에 't'(시간) 파라미터가 없을 때만 조회수를 올립니다.
-    # 즉, 사람이 직접 들어왔을 때만 올리고, 기계가 새로고침할 때는 안 올립니다.
+    # 조회수 증가 (새로고침 제외)
     if 't' not in request.args:
         new_views = post.get('view_count', 0) + 1
         supabase.table("posts").update({"view_count": new_views}).eq("id", post_id).execute()
-        post['view_count'] = new_views # 화면 표시용 업데이트
+        post['view_count'] = new_views
 
-    # ... (아래는 기존 코드와 동일) ...
+    # 좋아요 정보
     votes_res = supabase.table("likes").select("*").eq("post_id", post_id).execute()
-    # ...
     votes = votes_res.data
-    
     like_count = len([v for v in votes if v['vote_type'] == 'like'])
     dislike_count = len([v for v in votes if v['vote_type'] == 'dislike'])
     
@@ -67,8 +68,8 @@ def post_detail(post_id):
                 my_vote = v['vote_type']
                 break
     
-    # 댓글 가져오기
-    comment_res = supabase.table("comments").select("*, users(username)").eq("post_id", post_id).order("id").execute()
+    # 댓글 (작성자의 grade 포함)
+    comment_res = supabase.table("comments").select("*, users(username, is_admin, grade)").eq("post_id", post_id).order("id").execute()
     all_comments = comment_res.data
     parents = [c for c in all_comments if c['parent_id'] is None]
     replies = [c for c in all_comments if c['parent_id'] is not None]
@@ -77,129 +78,142 @@ def post_detail(post_id):
                            like_count=like_count, dislike_count=dislike_count, my_vote=my_vote)
 
 # ===========================
-# [투표 기능 (AJAX - 새로고침 없음)]
+# [관리자 기능]
 # ===========================
-# ===========================
-# [투표 기능 (로직 재정비)]
-# ===========================
-# app.py 의 vote 함수 수정
+@app.route('/admin')
+def admin_list():
+    if not session.get('is_admin'): return redirect(url_for('index'))
+    query = request.args.get('q', '')
+    if query:
+        res = supabase.table("users").select("*").ilike("username", f"%{query}%").order("id").execute()
+    else:
+        res = supabase.table("users").select("*").order("id").execute()
+    return render_template('admin_list.html', users=res.data, query=query)
 
+@app.route('/admin/user/<int:user_id>', methods=['GET', 'POST'])
+def admin_user_detail(user_id):
+    if not session.get('is_admin'): return redirect(url_for('index'))
+    
+    # 닉네임 수정
+    if request.method == 'POST':
+        try: supabase.table("users").update({"username": request.form['username']}).eq("id", user_id).execute()
+        except: pass
+        return redirect(url_for('admin_user_detail', user_id=user_id))
+    
+    user_res = supabase.table("users").select("*").eq("id", user_id).execute()
+    posts_res = supabase.table("posts").select("*").eq("author_id", user_id).order("id", desc=True).execute()
+    return render_template('admin_user_detail.html', user=user_res.data[0], posts=posts_res.data)
+
+# 🔥 [추가] 등급 변경 기능 🔥
+@app.route('/admin/update_grade/<int:user_id>', methods=['POST'])
+def admin_update_grade(user_id):
+    if not session.get('is_admin'): return "권한 없음", 403
+    new_grade = request.form['grade']
+    supabase.table("users").update({"grade": new_grade}).eq("id", user_id).execute()
+    return redirect(url_for('admin_user_detail', user_id=user_id))
+
+@app.route('/admin/toggle_admin/<int:user_id>')
+def toggle_admin(user_id):
+    if not session.get('is_admin'): return "권한 없음", 403
+    user_res = supabase.table("users").select("is_admin").eq("id", user_id).execute()
+    if user_res.data:
+        current = user_res.data[0]['is_admin']
+        supabase.table("users").update({"is_admin": not current}).eq("id", user_id).execute()
+    return redirect(url_for('admin_user_detail', user_id=user_id))
+
+@app.route('/notice/write', methods=['POST'])
+def write_notice():
+    if not session.get('is_admin'): return "권한 없음", 403
+    supabase.table("notices").insert({"content": request.form['content']}).execute()
+    return redirect(url_for('index'))
+
+@app.route('/notice/delete/<int:notice_id>')
+def delete_notice(notice_id):
+    if not session.get('is_admin'): return "권한 없음", 403
+    supabase.table("notices").delete().eq("id", notice_id).execute()
+    return redirect(url_for('index'))
+
+@app.route('/admin/delete_user/<int:user_id>')
+def admin_delete_user(user_id):
+    if not session.get('is_admin'): return "권한 없음", 403
+    supabase.table("users").delete().eq("id", user_id).execute()
+    return redirect(url_for('admin_list'))
+
+@app.route('/admin/update_password/<int:user_id>', methods=['POST'])
+def admin_update_password(user_id):
+    if not session.get('is_admin'): return "권한 없음", 403
+    hashed = generate_password_hash(request.form['new_password'])
+    supabase.table("users").update({"password": hashed}).eq("id", user_id).execute()
+    return redirect(url_for('admin_user_detail', user_id=user_id))
+
+# ===========================
+# [기본 기능 (로그인, 글쓰기 등)]
+# ===========================
 @app.route('/vote/<int:post_id>/<vote_type>')
 def vote(post_id, vote_type):
-    if 'user_id' not in session: 
-        return jsonify({'result': 'fail', 'msg': 'login_required'}), 401
-    
+    if 'user_id' not in session: return jsonify({'result': 'fail', 'msg': 'login_required'}), 401
     user_id = session['user_id']
-    
-    # 1. 내 투표 기록 확인
     existing = supabase.table("likes").select("*").eq("user_id", user_id).eq("post_id", post_id).execute()
-    
     if existing.data:
-        # 이미 투표한 기록이 있음
-        old_vote = existing.data[0]
-        
-        if old_vote['vote_type'] == vote_type:
-            # [삭제] 똑같은 걸 또 누름 -> 취소
-            # match를 사용하여 user_id와 post_id가 일치하는 것을 확실하게 삭제
+        old = existing.data[0]
+        if old['vote_type'] == vote_type:
             supabase.table("likes").delete().match({"user_id": user_id, "post_id": post_id}).execute()
-            print(f"삭제 완료: {user_id} -> {post_id}") # 터미널 로그 확인용
         else:
-            # [변경] 다른 걸 누름 (좋아요 <-> 싫어요)
-            supabase.table("likes").update({"vote_type": vote_type}).eq("id", old_vote['id']).execute()
-            print(f"변경 완료: {user_id} -> {post_id} -> {vote_type}")
+            supabase.table("likes").update({"vote_type": vote_type}).eq("id", old['id']).execute()
     else:
-        # [추가] 기록 없음 -> 새로 생성
-        supabase.table("likes").insert({
-            "user_id": user_id, "post_id": post_id, "vote_type": vote_type
-        }).execute()
-        print(f"추가 완료: {user_id} -> {post_id} -> {vote_type}")
+        supabase.table("likes").insert({"user_id": user_id, "post_id": post_id, "vote_type": vote_type}).execute()
     
-    # 2. 최신 숫자 다시 세기
-    votes_res = supabase.table("likes").select("*").eq("post_id", post_id).execute()
-    votes = votes_res.data
-    
-    new_like_count = len([v for v in votes if v['vote_type'] == 'like'])
-    new_dislike_count = len([v for v in votes if v['vote_type'] == 'dislike'])
-    
-    # 3. 내 현재 상태 확인
-    current_my_vote = None
+    votes = supabase.table("likes").select("*").eq("post_id", post_id).execute().data
+    like = len([v for v in votes if v['vote_type'] == 'like'])
+    dislike = len([v for v in votes if v['vote_type'] == 'dislike'])
+    my_vote = None
     for v in votes:
-        if v['user_id'] == user_id:
-            current_my_vote = v['vote_type']
-            break
+        if v['user_id'] == user_id: my_vote = v['vote_type']; break
+    return jsonify({'result': 'success', 'like_count': like, 'dislike_count': dislike, 'my_vote': my_vote})
 
-    return jsonify({
-        'result': 'success',
-        'like_count': new_like_count,
-        'dislike_count': new_dislike_count,
-        'my_vote': current_my_vote
-    })
-
-# ===========================
-# [글쓰기 (파일 업로드 보안 적용)]
-# ===========================
 @app.route('/write', methods=['POST'])
 def write():
     if 'user_id' not in session: return redirect(url_for('login'))
-    
-    title = request.form['title']
-    content = request.form['content']
-    file = request.files.get('file')
-    image_url = None
-
+    title = request.form['title']; content = request.form['content']; file = request.files.get('file'); image_url = None
     if file and file.filename != '':
         if allowed_file(file.filename):
             try:
-                filename = secure_filename(file.filename)
-                timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-                file_path = f"{session['user_id']}_{timestamp}_{filename}"
-                file_content = file.read()
-                
-                # 파일 타입(MIME) 감지하여 업로드
-                content_type = file.content_type
-                supabase.storage.from_("images").upload(file_path, file_content, {"content-type": content_type})
-                image_url = supabase.storage.from_("images").get_public_url(file_path)
-            except Exception as e:
-                print(f"업로드 에러: {e}")
-        else:
-            print("허용되지 않은 파일 형식입니다.")
-
-    supabase.table("posts").insert({
-        "title": title, "content": content, "image_url": image_url, "author_id": session['user_id']
-    }).execute()
-    
+                fn = secure_filename(file.filename); ts = datetime.now().strftime("%Y%m%d%H%M%S")
+                fp = f"{session['user_id']}_{ts}_{fn}"
+                supabase.storage.from_("images").upload(fp, file.read(), {"content-type": file.content_type})
+                image_url = supabase.storage.from_("images").get_public_url(fp)
+            except Exception as e: print(e)
+    supabase.table("posts").insert({"title": title, "content": content, "image_url": image_url, "author_id": session['user_id']}).execute()
     return redirect(url_for('index'))
 
-# ===========================
-# [회원가입 / 로그인 / 기타]
-# ===========================
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+        username = request.form['username']; password = request.form['password']
         if username == 'ADMIN' and password == 'testpassword':
             session['user_id'] = 0; session['username'] = '관리자(ADMIN)'; session['is_admin'] = True
             return redirect(url_for('admin_list'))
         res = supabase.table("users").select("*").eq("username", username).execute()
-        user = res.data[0] if res.data else None
-        if user and check_password_hash(user['password'], password):
-            session['user_id'] = user['id']; session['username'] = user['username']; session.pop('is_admin', None)
+        if res.data and check_password_hash(res.data[0]['password'], password):
+            user = res.data[0]
+            session['user_id'] = user['id']; session['username'] = user['username']; session['is_admin'] = user.get('is_admin', False)
             return redirect(url_for('index'))
-        else: return render_template('login.html', error="아이디 또는 비밀번호가 틀렸습니다.")
+        else: return render_template('login.html', error="아이디 또는 비밀번호 오류")
     return render_template('login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     username_error = None; password_error = None
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+        username = request.form['username']; password = request.form['password']
+        if not re.match(r'^[a-zA-Z가-힣]+$', username):
+            username_error = "아이디는 영어와 한글만 가능합니다!"
+            return render_template('register.html', username_error=username_error, password_error=password_error, username=username)
         if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
-            password_error = "특수문자 필수!"; return render_template('register.html', username_error=username_error, password_error=password_error, username=username)
-        hashed_pw = generate_password_hash(password)
+            password_error = "특수문자 필수!"
+            return render_template('register.html', username_error=username_error, password_error=password_error, username=username)
         try:
-            supabase.table("users").insert({"username": username, "password": hashed_pw}).execute()
+            supabase.table("users").insert({"username": username, "password": generate_password_hash(password)}).execute()
             return redirect(url_for('login'))
         except: username_error = "이미 사용 중인 아이디입니다."
     return render_template('register.html', username_error=username_error, password_error=password_error)
@@ -210,23 +224,22 @@ def logout(): session.clear(); return redirect(url_for('index'))
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
     if 'user_id' not in session: return redirect(url_for('login'))
+    if session['user_id'] == 0: return render_template('settings.html', msg="🔒 슈퍼 관리자는 비밀번호 변경 불가")
     msg = None
     if request.method == 'POST':
-        current_pw = request.form['current_password']; new_pw = request.form['new_password']
-        res = supabase.table("users").select("*").eq("id", session['user_id']).execute(); user = res.data[0]
-        if not check_password_hash(user['password'], current_pw): msg = "❌ 현재 비밀번호 오류"
-        elif not re.search(r'[!@#$%^&*(),.?":{}|<>]', new_pw): msg = "❌ 특수문자 필수"
+        cur = request.form['current_password']; new = request.form['new_password']
+        user = supabase.table("users").select("*").eq("id", session['user_id']).execute().data[0]
+        if not check_password_hash(user['password'], cur): msg = "❌ 현재 비밀번호 오류"
+        elif not re.search(r'[!@#$%^&*(),.?":{}|<>]', new): msg = "❌ 특수문자 필수"
         else:
-            new_hashed = generate_password_hash(new_pw)
-            supabase.table("users").update({"password": new_hashed}).eq("id", session['user_id']).execute()
+            supabase.table("users").update({"password": generate_password_hash(new)}).eq("id", session['user_id']).execute()
             msg = "✅ 변경 완료!"
     return render_template('settings.html', msg=msg)
 
 @app.route('/comment/<int:post_id>', methods=['POST'])
 def add_comment(post_id):
     if 'user_id' not in session: return redirect(url_for('login'))
-    content = request.form['content']; parent_id = request.form.get('parent_id')
-    if parent_id == '': parent_id = None
+    content = request.form['content']; parent_id = request.form.get('parent_id') or None
     data = {"content": content, "post_id": post_id, "author_id": session['user_id']}
     if parent_id: data['parent_id'] = int(parent_id)
     supabase.table("comments").insert(data).execute()
@@ -235,56 +248,21 @@ def add_comment(post_id):
 @app.route('/edit/<int:post_id>', methods=['GET', 'POST'])
 def edit(post_id):
     if 'user_id' not in session: return redirect(url_for('login'))
-    res = supabase.table("posts").select("*").eq("id", post_id).execute()
-    if not res.data: return "글 없음"
-    post = res.data[0]
+    post = supabase.table("posts").select("*").eq("id", post_id).execute().data[0]
     if post['author_id'] != session['user_id'] and not session.get('is_admin'): return "권한 없음", 403
     if request.method == 'POST':
         supabase.table("posts").update({"title": request.form['title'], "content": request.form['content']}).eq("id", post_id).execute()
-        if session.get('is_admin'): return redirect(url_for('admin_user_detail', user_id=post['author_id']))
         return redirect(url_for('index'))
     return render_template('edit.html', post=post)
 
 @app.route('/delete/<int:post_id>')
 def delete(post_id):
     if 'user_id' not in session: return redirect(url_for('login'))
-    res = supabase.table("posts").select("*").eq("id", post_id).execute()
-    if not res.data: return redirect(url_for('index'))
-    post = res.data[0]
+    post = supabase.table("posts").select("*").eq("id", post_id).execute().data[0]
     if post['author_id'] == session['user_id'] or session.get('is_admin'):
         supabase.table("posts").delete().eq("id", post_id).execute()
     if session.get('is_admin'): return redirect(url_for('admin_list'))
     return redirect(url_for('index'))
 
-# 관리자 관련 (필요하면 추가/유지)
-@app.route('/admin')
-def admin_list():
-    if not session.get('is_admin'): return redirect(url_for('index'))
-    query = request.args.get('q', ''); res = supabase.table("users").select("*").ilike("username", f"%{query}%").order("id").execute() if query else supabase.table("users").select("*").order("id").execute()
-    return render_template('admin_list.html', users=res.data, query=query)
-
-@app.route('/admin/user/<int:user_id>', methods=['GET', 'POST'])
-def admin_user_detail(user_id):
-    if not session.get('is_admin'): return redirect(url_for('index'))
-    if request.method == 'POST':
-        try: supabase.table("users").update({"username": request.form['username']}).eq("id", user_id).execute()
-        except: pass
-        return redirect(url_for('admin_user_detail', user_id=user_id))
-    user_res = supabase.table("users").select("*").eq("id", user_id).execute(); posts_res = supabase.table("posts").select("*").eq("author_id", user_id).order("id", desc=True).execute()
-    return render_template('admin_user_detail.html', user=user_res.data[0], posts=posts_res.data)
-
-@app.route('/admin/delete_user/<int:user_id>')
-def admin_delete_user(user_id):
-    if not session.get('is_admin'): return "권한 없음", 403
-    supabase.table("users").delete().eq("id", user_id).execute(); return redirect(url_for('admin_list'))
-
-@app.route('/admin/update_password/<int:user_id>', methods=['POST'])
-def admin_update_password(user_id):
-    if not session.get('is_admin'): return "권한 없음", 403
-    hashed_pw = generate_password_hash(request.form['new_password'])
-    supabase.table("users").update({"password": hashed_pw}).eq("id", user_id).execute()
-    return redirect(url_for('admin_user_detail', user_id=user_id))
-
 if __name__ == '__main__':
-    # 🔥 모바일(외부) 접속 허용을 위해 0.0.0.0 설정 🔥
     app.run(host='0.0.0.0', port=5000, debug=True)

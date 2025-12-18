@@ -17,34 +17,57 @@
 </head>
 
 <body>
+
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-12 col-md-6 col-lg-5">
+
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h3 class="fw-bold m-0">⚙️ 설정</h3><a href="/" class="btn btn-outline-secondary btn-sm">홈으로</a>
+                    <h3 class="fw-bold m-0">⚙️ 계정 설정</h3>
+                    <a href="/" class="btn btn-outline-secondary btn-sm">홈으로</a>
                 </div>
+
                 <div class="card shadow-sm border-0">
                     <div class="card-header bg-white py-3">
                         <h5 class="m-0 fw-bold text-primary">비밀번호 변경</h5>
                     </div>
                     <div class="card-body p-4">
-                        {% if msg %}<div
-                            class="alert {% if '성공' in msg %}alert-success{% else %}alert-danger{% endif %} text-center p-2 small mb-3">
-                            {{ msg }}</div>{% endif %}
+
+                        {% if msg %}
+                        <div
+                            class="alert {% if '성공' in msg or '완료' in msg %}alert-success{% else %}alert-danger{% endif %} text-center p-2 small mb-3">
+                            {{ msg }}
+                        </div>
+                        {% endif %}
+
+                        {% if session.get('user_id') == 0 %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-lock fa-3x mb-3"></i>
+                            <p>슈퍼 관리자(ADMIN) 계정은<br>보안상 비밀번호를 변경할 수 없습니다.</p>
+                        </div>
+                        {% else %}
                         <form action="/settings" method="POST">
-                            <div class="mb-3"><label class="fw-bold small text-muted">현재 비밀번호</label><input
-                                    type="password" name="current_password" class="form-control form-control-lg"
-                                    required></div>
-                            <div class="mb-4"><label class="fw-bold small text-muted">새 비밀번호</label><input
-                                    type="password" name="new_password" class="form-control form-control-lg" required>
+                            <div class="mb-3">
+                                <label class="form-label small text-muted fw-bold">현재 비밀번호</label>
+                                <input type="password" name="current_password" class="form-control form-control-lg"
+                                    required>
                             </div>
-                            <button type="submit" class="btn btn-dark w-100 btn-lg fw-bold">저장</button>
+                            <div class="mb-4">
+                                <label class="form-label small text-muted fw-bold">새 비밀번호 (특수문자 포함)</label>
+                                <input type="password" name="new_password" class="form-control form-control-lg"
+                                    required>
+                            </div>
+                            <button type="submit" class="btn btn-dark w-100 btn-lg fw-bold">변경사항 저장</button>
                         </form>
+                        {% endif %}
+
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </body>
 
 </html>

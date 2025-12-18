@@ -24,13 +24,55 @@
             white-space: pre-wrap;
         }
 
-        .vote-btn {
-            min-width: 120px;
-            transition: transform 0.1s;
+        .admin-badge {
+            font-size: 0.75rem;
+            background-color: #dc3545;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 3px;
+            vertical-align: middle;
         }
 
-        .vote-btn:active {
-            transform: scale(0.95);
+        /* 🔥 등급 스타일 (Index와 동일하게 적용) 🔥 */
+        .grade-badge {
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 3px;
+            vertical-align: middle;
+            color: white;
+            font-weight: bold;
+            background-color: #0d6efd;
+        }
+
+        .grade-badge[data-grade="골드 회원"] {
+            background-color: #FFD700;
+            color: #000;
+            border: 1px solid #e0c200;
+        }
+
+        .grade-badge[data-grade="다이아몬드 회원"] {
+            background-color: #00e1ff;
+            color: #fff;
+            box-shadow: 0 0 5px #00e1ff;
+        }
+
+        .grade-badge[data-grade="너 짱 최고 회원"] {
+            background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+            background-size: 400%;
+            animation: rainbow 3s linear infinite;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        @keyframes rainbow {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            100% {
+                background-position: 100% 50%;
+            }
         }
     </style>
 </head>
@@ -39,52 +81,44 @@
 
     <div class="container py-4">
         <div class="row justify-content-center">
-            <div class="col-12 col-lg-8">
+            <div class="col-12 col-lg-8" id="main-content">
                 <a href="/" class="text-decoration-none text-muted mb-3 d-inline-block fw-bold">&larr; 목록으로</a>
 
                 <div class="card shadow-sm mb-4 border-0">
                     <div class="card-body p-3 p-md-4">
                         <h3 class="fw-bold mb-3">{{ post.title }}</h3>
                         <div class="d-flex justify-content-between text-muted border-bottom pb-3 mb-3 small">
-                            <span><i class="fas fa-user"></i> {{ post.users.username }}</span>
-                            <span id="view-area">
-                                <i class="fas fa-eye"></i> {{ post.view_count }} ·
-                                <span class="time-ago" data-date="{{ post.created_at }}">{{ post.created_at[:16]
-                                    }}</span>
+                            <span>
+                                <i class="fas fa-user"></i> {{ post.users.username }}
+                                <span class="grade-badge" data-grade="{{ post.users.grade or '일반 회원' }}">{{
+                                    post.users.grade or '일반 회원' }}</span>
+                                {% if post.users.is_admin %}<span class="admin-badge">관리자</span>{% endif %}
                             </span>
+                            <span><i class="fas fa-eye"></i> {{ post.view_count }} · <span class="time-ago"
+                                    data-date="{{ post.created_at }}">{{ post.created_at[:16] }}</span></span>
                         </div>
-
                         {% if post.image_url %}
                         <div class="mb-4 text-center bg-dark rounded p-2">
-                            {% if '.mp4' in post.image_url or '.mov' in post.image_url or '.webm' in post.image_url %}
-                            <video src="{{ post.image_url }}" class="detail-img" controls playsinline></video>
-                            {% else %}
-                            <img src="{{ post.image_url }}" class="detail-img" alt="media">
-                            {% endif %}
+                            {% if '.mp4' in post.image_url or '.mov' in post.image_url or '.webm' in post.image_url
+                            %}<video src="{{ post.image_url }}" class="detail-img" controls playsinline></video>
+                            {% else %}<img src="{{ post.image_url }}" class="detail-img" alt="media">{% endif %}
                         </div>
                         {% endif %}
-
                         <div class="post-content mt-3">{{ post.content }}</div>
 
                         <div id="vote-area" class="d-flex justify-content-center gap-2 mt-5">
                             <button onclick="sendVote('like')" id="btn-like"
-                                class="btn vote-btn rounded-pill {% if my_vote == 'like' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                                <i class="fas fa-thumbs-up"></i> 좋아요 <span id="count-like" class="fw-bold ms-1">{{
-                                    like_count }}</span>
-                            </button>
-
+                                class="btn rounded-pill {% if my_vote == 'like' %}btn-primary{% else %}btn-outline-primary{% endif %}"><i
+                                    class="fas fa-thumbs-up"></i> 좋아요 <span id="count-like">{{ like_count
+                                    }}</span></button>
                             <button onclick="sendVote('dislike')" id="btn-dislike"
-                                class="btn vote-btn rounded-pill {% if my_vote == 'dislike' %}btn-danger{% else %}btn-outline-danger{% endif %}">
-                                <i class="fas fa-thumbs-down"></i> 싫어요 <span id="count-dislike" class="fw-bold ms-1">{{
-                                    dislike_count }}</span>
-                            </button>
+                                class="btn rounded-pill {% if my_vote == 'dislike' %}btn-danger{% else %}btn-outline-danger{% endif %}"><i
+                                    class="fas fa-thumbs-down"></i> 싫어요 <span id="count-dislike">{{ dislike_count
+                                    }}</span></button>
                         </div>
-
                         {% if session.get('user_id') == post.author_id %}
-                        <div class="text-end mt-4">
-                            <a href="/delete/{{ post.id }}" class="btn btn-outline-danger btn-sm"
-                                onclick="return confirm('삭제하시겠습니까?')">삭제</a>
-                        </div>
+                        <div class="text-end mt-4"><a href="/delete/{{ post.id }}" class="btn btn-outline-danger btn-sm"
+                                onclick="return confirm('삭제?')">삭제</a></div>
                         {% endif %}
                     </div>
                 </div>
@@ -95,24 +129,32 @@
                         {% for parent in parents %}
                         <div class="list-group-item bg-white p-3">
                             <div class="d-flex justify-content-between">
-                                <strong>{{ parent.users.username }}</strong>
+                                <strong>
+                                    {{ parent.users.username }}
+                                    <span class="grade-badge" data-grade="{{ parent.users.grade or '일반 회원' }}">{{
+                                        parent.users.grade or '일반 회원' }}</span>
+                                    {% if parent.users.is_admin %}<span class="admin-badge">관리자</span>{% endif %}
+                                </strong>
                                 <small class="text-muted time-ago" data-date="{{ parent.created_at }}">{{
                                     parent.created_at[:10] }}</small>
                             </div>
                             <p class="mb-2 mt-1">{{ parent.content }}</p>
-                            {% if session.get('user_id') %}
-                            <button class="btn btn-sm btn-link text-decoration-none p-0 mb-2" type="button"
-                                data-bs-toggle="collapse" data-bs-target="#replyForm{{ parent.id }}">↪ 답글</button>
-                            {% endif %}
+                            {% if session.get('user_id') %}<button
+                                class="btn btn-sm btn-link text-decoration-none p-0 mb-2" data-bs-toggle="collapse"
+                                data-bs-target="#replyForm{{ parent.id }}">↪ 답글</button>{% endif %}
                             {% for reply in replies %}
                             {% if reply.parent_id == parent.id %}
                             <div
                                 class="d-flex mt-2 ms-3 ms-md-4 p-2 bg-light rounded border-start border-3 border-primary">
                                 <div class="w-100">
                                     <div class="d-flex justify-content-between">
-                                        <small class="fw-bold text-primary">{{ reply.users.username }}</small>
-                                        <small class="text-muted time-ago" data-date="{{ reply.created_at }}"
-                                            style="font-size: 0.75rem;">{{ reply.created_at[:10] }}</small>
+                                        <small class="fw-bold text-primary">
+                                            {{ reply.users.username }}
+                                            <span class="grade-badge" data-grade="{{ reply.users.grade or '일반 회원' }}">{{
+                                                reply.users.grade or '일반 회원' }}</span>
+                                        </small>
+                                        <small class="text-muted time-ago" data-date="{{ reply.created_at }}">{{
+                                            reply.created_at[:10] }}</small>
                                     </div>
                                     <p class="mb-0 small">{{ reply.content }}</p>
                                 </div>
@@ -128,119 +170,70 @@
                                 </form>
                             </div>
                         </div>
-                        {% else %}
-                        <div class="p-4 text-center text-muted">댓글이 없습니다.</div>
-                        {% endfor %}
+                        {% else %}<div class="p-4 text-center text-muted">댓글이 없습니다.</div>{% endfor %}
                     </div>
                     {% if session.get('user_id') %}
                     <div class="card-body border-top bg-light p-3">
-                        <form action="/comment/{{ post.id }}" method="POST" class="d-flex gap-2">
-                            <input type="text" name="content" class="form-control" placeholder="댓글 입력..." required>
-                            <button class="btn btn-primary">등록</button>
-                        </form>
+                        <form action="/comment/{{ post.id }}" method="POST" class="d-flex gap-2"><input type="text"
+                                name="content" class="form-control" placeholder="댓글 입력..." required><button
+                                class="btn btn-primary">등록</button></form>
                     </div>
-                    {% else %}
-                    <div class="card-body text-center py-4"><a href="/login" class="fw-bold">로그인</a> 후 댓글 작성 가능</div>
-                    {% endif %}
+                    {% else %}<div class="card-body text-center py-4"><a href="/login" class="fw-bold">로그인</a> 후 댓글 작성
+                        가능</div>{% endif %}
                 </div>
             </div>
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
     <script>
         const SUPABASE_URL = "https://porctgadcosjzgpkxiqw.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvcmN0Z2FkY29zanpncGt4aXF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwMzc4MjYsImV4cCI6MjA4MTYxMzgyNn0.QmB0BnyLAYY0Rt3-fffExHQt4BGgWWr7USc5V9qbA2c";
-
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         const postId = "{{ post.id }}";
 
-        // 시간 계산 함수
         function updateTimeAgo() {
             const els = document.querySelectorAll('.time-ago');
             const now = new Date();
-
             els.forEach(el => {
                 const dateStr = el.getAttribute('data-date');
                 if (!dateStr) return;
-
-                const past = new Date(dateStr);
-                const diffMs = now - past;
-                const diffMin = Math.floor(diffMs / (1000 * 60));
-                const diffHour = Math.floor(diffMs / (1000 * 60 * 60));
-                const diffDay = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
+                const diffMs = now - new Date(dateStr);
+                const diffMin = Math.floor(diffMs / 60000);
                 if (diffMin < 1) el.innerText = "방금 전";
                 else if (diffMin < 60) el.innerText = diffMin + "분 전";
-                else if (diffHour < 24) el.innerText = diffHour + "시간 전";
-                else el.innerText = diffDay + "일 전";
+                else el.innerText = Math.floor(diffMs / 86400000) > 0 ? Math.floor(diffMs / 86400000) + "일 전" : Math.floor(diffMs / 3600000) + "시간 전";
             });
         }
-        updateTimeAgo(); // 최초 실행
+        updateTimeAgo();
 
         function sendVote(type) {
-            fetch(`/vote/${postId}/${type}`)
-                .then(r => {
-                    if (r.status === 401) { alert("로그인이 필요합니다."); window.location = "/login"; return null; }
-                    return r.json();
-                })
-                .then(data => {
-                    if (!data) return;
-                    updateButtons(data.like_count, data.dislike_count, data.my_vote);
-                })
-                .catch(err => console.error(err));
+            fetch(`/vote/${postId}/${type}`).then(r => r.status === 401 ? (alert("로그인 필요"), window.location = "/login") : r.json()).then(d => { if (d) updateButtons(d.like_count, d.dislike_count, d.my_vote) });
+        }
+        function updateButtons(l, d, v) {
+            document.getElementById('count-like').innerText = l; document.getElementById('count-dislike').innerText = d;
+            const bl = document.getElementById('btn-like'), bd = document.getElementById('btn-dislike');
+            const bc = "btn rounded-pill ";
+            bl.className = bc + (v === 'like' ? 'btn-primary' : 'btn-outline-primary');
+            bd.className = bc + (v === 'dislike' ? 'btn-danger' : 'btn-outline-danger');
         }
 
-        function updateButtons(likeCnt, dislikeCnt, myVote) {
-            document.getElementById('count-like').innerText = likeCnt;
-            document.getElementById('count-dislike').innerText = dislikeCnt;
-            const btnLike = document.getElementById('btn-like');
-            const btnDislike = document.getElementById('btn-dislike');
-            const baseClass = "btn vote-btn rounded-pill ";
-            if (myVote === 'like') {
-                btnLike.className = baseClass + "btn-primary";
-                btnDislike.className = baseClass + "btn-outline-danger";
-            } else if (myVote === 'dislike') {
-                btnLike.className = baseClass + "btn-outline-primary";
-                btnDislike.className = baseClass + "btn-danger";
-            } else {
-                btnLike.className = baseClass + "btn-outline-primary";
-                btnDislike.className = baseClass + "btn-outline-danger";
-            }
-        }
-
-        const channel = _supabase
-            .channel('detail-page-changes')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'comments', filter: `post_id=eq.${postId}` }, () => {
-                refreshPart('comment-list');
-            })
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'likes', filter: `post_id=eq.${postId}` }, () => {
-                refreshPart('vote-area');
-            })
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'posts', filter: `id=eq.${postId}` }, () => {
-                refreshPart('view-area');
-            })
+        const channel = _supabase.channel('detail-updates')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'comments', filter: `post_id=eq.${postId}` }, () => refreshPage())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'likes', filter: `post_id=eq.${postId}` }, () => refreshPage())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'posts', filter: `id=eq.${postId}` }, () => refreshPage())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => refreshPage())
             .subscribe();
 
-        async function refreshPart(elementId) {
+        async function refreshPage() {
             try {
-                const response = await fetch(window.location.href + '?t=' + Date.now());
-                const text = await response.text();
-                const parser = new DOMParser();
-                const newDoc = parser.parseFromString(text, 'text/html');
-
-                const newContent = newDoc.getElementById(elementId);
-                const oldContent = document.getElementById(elementId);
-
-                if (newContent && oldContent) {
-                    oldContent.innerHTML = newContent.innerHTML;
-                    // 🔥 새로고침 후 시간 다시 계산 🔥
-                    updateTimeAgo();
-                }
-            } catch (err) { console.error(err); }
+                const res = await fetch(window.location.href + '?t=' + Date.now());
+                const text = await res.text();
+                const newDoc = new DOMParser().parseFromString(text, 'text/html');
+                document.getElementById('main-content').innerHTML = newDoc.getElementById('main-content').innerHTML;
+                updateTimeAgo();
+            } catch (e) { console.error(e); }
         }
     </script>
-
 </body>
 
 </html>
