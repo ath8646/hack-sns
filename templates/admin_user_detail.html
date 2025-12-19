@@ -3,88 +3,167 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>유저 관리</title>
+    <title>유저 상세 관리 - 어드민</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --admin-primary: #4e73df; --admin-dark: #224abe; }
+        body { background-color: #f0f2f5; font-family: 'Pretendard', sans-serif; }
+        .admin-card { border: none; border-radius: 12px; box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1); margin-bottom: 24px; }
+        .card-header-custom { background-color: #fff; border-bottom: 1px solid #e3e6f0; padding: 15px 20px; border-radius: 12px 12px 0 0 !important; }
+        .section-title { font-weight: 800; color: var(--admin-primary); font-size: 1.1rem; margin-bottom: 0; }
+        .form-label { font-weight: 700; color: #4e5e7a; font-size: 0.9rem; }
+        .grade-select { font-weight: 700; border-radius: 8px; border: 2px solid #e3e6f0; }
+        .list-group-item { border-inline: none; padding: 15px 20px; transition: background 0.2s; }
+        .list-group-item:hover { background-color: #f8f9fc; }
+        .badge-secure { background-color: #f6c23e; color: #000; font-size: 0.7rem; }
+        .danger-zone { border: 1px solid #ea4335; background-color: #fff5f5; border-radius: 12px; padding: 20px; }
+    </style>
 </head>
-<body class="bg-light">
+<body>
 
 <div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h3 class="fw-bold">👤 유저 상세 정보</h3>
-                <a href="/admin" class="btn btn-outline-secondary">목록으로</a>
-            </div>
+    <div class="d-flex justify-content-between align-items-end mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="/admin" class="text-decoration-none text-muted">관리자 홈</a></li>
+                    <li class="breadcrumb-item active">유저 상세</li>
+                </ol>
+            </nav>
+            <h2 class="fw-bold mb-0">👤 <span class="text-primary">{{ user.username }}</span> 관리</h2>
+        </div>
+        <a href="/admin" class="btn btn-outline-dark rounded-pill fw-bold px-4">
+            <i class="fas fa-list me-2"></i>목록으로
+        </a>
+    </div>
 
-            <div class="card shadow-sm mb-4">
-                <div class="card-body p-4">
-                    <form action="/admin/user/{{ user.id }}" method="POST">
+    <div class="row">
+        <div class="col-lg-5">
+            <div class="card admin-card">
+                <div class="card-header-custom">
+                    <h6 class="section-title"><i class="fas fa-info-circle me-2"></i>기본 계정 정보</h6>
+                </div>
+                <div class="card-body">
+                    <form action="/admin/user/{{ user.id }}" method="POST" class="mb-4">
                         <div class="mb-3">
-                            <label class="form-label fw-bold">아이디</label>
-                            <input type="text" name="username" class="form-control fw-bold" value="{{ user.username }}">
+                            <label class="form-label">사용자 아이디 (닉네임)</label>
+                            <div class="input-group">
+                                <input type="text" name="username" class="form-control fw-bold" value="{{ user.username }}">
+                                <button class="btn btn-primary px-3">변경</button>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">가입일</label>
-                            <input type="text" class="form-control" value="{{ user.created_at[:16] }}" disabled>
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-sm">닉네임 저장</button>
                     </form>
 
-                    <hr class="my-4">
-
-                    <h5 class="fw-bold text-primary mb-3"><i class="fas fa-user-tag"></i> 등급 및 권한 설정</h5>
-                    <div class="alert alert-info small">
-                        <i class="fas fa-info-circle"></i> <b>'관리자'</b> 등급을 선택하면 자동으로 <b>관리자 권한</b>이 부여됩니다.
+                    <div class="mb-4 p-3 bg-light rounded-3 border">
+                        <label class="form-label text-primary"><i class="fas fa-key me-1"></i> 관리자 권한 비밀번호 재설정</label>
+                        <div class="input-group input-group-sm mb-1">
+                            <input type="text" id="newPassword" class="form-control" placeholder="새 비밀번호 입력">
+                            <button type="button" class="btn btn-warning fw-bold" onclick="resetUserPassword('{{ user.id }}')">강제 적용</button>
+                        </div>
+                        <small class="text-muted" style="font-size: 0.75rem;">※ 보안상 기존 비번 확인은 불가하며, 즉시 변경만 가능합니다.</small>
                     </div>
 
-                    <form action="/admin/update_grade/{{ user.id }}" method="POST" class="mb-4">
+                    <form action="/admin/update_grade/{{ user.id }}" method="POST">
+                        <label class="form-label">회원 등급 설정</label>
                         <div class="input-group">
-                            <span class="input-group-text fw-bold">현재: {{ user.grade or '일반 회원' }}</span>
-                            <select name="grade" class="form-select fw-bold">
-                                <option value="일반 회원" {% if user.grade == '일반 회원' %}selected{% endif %}>🔵 일반 회원</option>
-                                <option value="골드 회원" {% if user.grade == '골드 회원' %}selected{% endif %}>🟡 골드 회원</option>
-                                <option value="다이아몬드 회원" {% if user.grade == '다이아몬드 회원' %}selected{% endif %}>💎 다이아몬드 회원</option>
-                                <option value="너 짱 최고 회원" {% if user.grade == '너 짱 최고 회원' %}selected{% endif %}>🌈 너 짱 최고 회원</option>
-                                <option value="관리자" {% if user.grade == '관리자' %}selected{% endif %} class="text-danger fw-bold">👑 관리자 (Admin)</option>
+                            <select name="grade" class="form-select grade-select">
+                                <option value="일반" {% if user.grade == '일반' %}selected{% endif %}>🔵 일반 회원</option>
+                                <option value="골드" {% if user.grade == '골드' %}selected{% endif %}>🟡 골드 회원</option>
+                                <option value="다이아몬드" {% if user.grade == '다이아몬드' %}selected{% endif %}>💎 다이아몬드 회원</option>
+                                <option value="너 짱 최고" {% if user.grade == '너 짱 최고' %}selected{% endif %}>🌈 너 짱 최고</option>
+                                <option value="관리자" {% if user.grade == '관리자' %}selected{% endif %} class="text-danger fw-bold">👑 관리자 권한</option>
                             </select>
-                            <button class="btn btn-outline-primary fw-bold">변경 적용</button>
+                            <button class="btn btn-dark fw-bold">적용</button>
                         </div>
                     </form>
+                </div>
+            </div>
 
-                    <hr class="my-4">
+            <div class="danger-zone shadow-sm mb-4">
+                <h6 class="fw-bold text-danger mb-3"><i class="fas fa-radiation"></i> 위험 구역 (Danger Zone)</h6>
+                <p class="small text-muted mb-3">계정을 삭제하면 복구가 불가능하며, 해당 유저의 모든 데이터 접근 권한이 상실됩니다.</p>
+                <a href="/admin/delete_user/{{ user.id }}" class="btn btn-danger w-100 fw-bold rounded-pill" onclick="return confirm('정말 계정을 영구 삭제하시겠습니까?')">
+                    <i class="fas fa-user-slash me-2"></i>사용자 영구 삭제
+                </a>
+            </div>
+        </div>
 
-                    <h5 class="fw-bold text-danger mb-3">⚠️ 위험 구역</h5>
-                    <div class="row g-2">
-                        <div class="col-12">
-                            <a href="/admin/delete_user/{{ user.id }}" class="btn btn-danger w-100 fw-bold" onclick="return confirm('정말 계정을 삭제하시겠습니까?')">
-                                <i class="fas fa-trash-alt"></i> 계정 영구 삭제
+        <div class="col-lg-7">
+            <div class="card admin-card">
+                <div class="card-header-custom d-flex justify-content-between align-items-center">
+                    <h6 class="section-title text-success"><i class="fas fa-layer-group me-2"></i>이 유저가 만든 갤러리</h6>
+                    <span class="badge bg-success rounded-pill">{{ user_galleries|length }}</span>
+                </div>
+                <div class="list-group list-group-flush" style="max-height: 300px; overflow-y: auto;">
+                    {% for g in user_galleries %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div class="text-truncate me-3">
+                            <span class="fw-bold text-dark">{{ g.name }}</span>
+                            {% if g.is_secure %}
+                            <span class="badge badge-secure ms-1"><i class="fas fa-lock"></i> 보안</span>
+                            {% endif %}
+                            <div class="text-muted small text-truncate" style="max-width: 250px;">{{ g.description or '설명 없음' }}</div>
+                        </div>
+                        <div class="d-flex gap-1">
+                            {% if g.is_secure %}
+                            <button class="btn btn-xs btn-outline-warning py-0 px-2" style="font-size: 0.75rem;" onclick="changeGalleryPw('{{ g.id }}')">비번변경</button>
+                            {% endif %}
+                            <button class="btn btn-xs btn-outline-danger py-0 px-2" style="font-size: 0.75rem;" onclick="location.href='/admin/delete_gallery/{{ g.id }}?u_id={{ user.id }}'">삭제</button>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="p-5 text-center text-muted">생성한 갤러리가 없습니다.</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="card admin-card">
+                <div class="card-header-custom d-flex justify-content-between align-items-center">
+                    <h6 class="section-title text-dark"><i class="fas fa-pen-nib me-2"></i>최근 작성한 게시글</h6>
+                    <span class="badge bg-dark rounded-pill">{{ posts|length }}</span>
+                </div>
+                <div class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
+                    {% for post in posts %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <a href="/post/{{ post.id }}" class="text-decoration-none text-dark text-truncate fw-bold small me-2" style="flex: 1;">
+                            {{ post.title }}
+                        </a>
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="text-muted d-none d-sm-inline" style="font-size: 0.75rem;">{{ post.created_at[:10] }}</span>
+                            <a href="/delete/{{ post.id }}" class="text-danger" onclick="return confirm('이 글을 삭제하시겠습니까?')">
+                                <i class="fas fa-trash-alt"></i>
                             </a>
                         </div>
                     </div>
+                    {% else %}
+                    <div class="p-5 text-center text-muted">작성한 게시글이 없습니다.</div>
+                    {% endfor %}
                 </div>
-            </div>
-
-            <h5 class="fw-bold">📝 작성한 게시글</h5>
-            <div class="list-group">
-                {% for post in posts %}
-                <div class="list-group-item d-flex justify-content-between align-items-center">
-                    <a href="/post/{{ post.id }}" class="text-decoration-none text-dark text-truncate" style="max-width: 70%;">
-                        {{ post.title }}
-                    </a>
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="badge bg-light text-dark border d-none d-sm-inline">{{ post.created_at[:10] }}</span>
-                        <a href="/delete/{{ post.id }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('이 글을 삭제하시겠습니까?')">
-                            <i class="fas fa-trash-alt"></i>
-                        </a>
-                    </div>
-                </div>
-                {% else %}
-                <div class="list-group-item text-center text-muted">작성한 글이 없습니다.</div>
-                {% endfor %}
             </div>
         </div>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// 1. 유저 비밀번호 강제 리셋
+function resetUserPassword(userId) {
+    const newPw = document.getElementById('newPassword').value;
+    if(!newPw) { alert('변경할 비밀번호를 입력하세요.'); return; }
+    if(confirm('경고: 이 유저의 비밀번호를 강제로 변경하시겠습니까?')) {
+        location.href = `/admin/reset_pw/${userId}?new_pw=${encodeURIComponent(newPw)}`;
+    }
+}
+
+// 2. 유저가 만든 보안 갤러리 비밀번호 강제 변경
+function changeGalleryPw(gId) {
+    const newPw = prompt('관리자 권한: 새로운 갤러리 입장 비밀번호를 입력하세요:');
+    if(newPw) {
+        location.href = `/admin/gallery_pw/${gId}?new_pw=${encodeURIComponent(newPw)}&u_id={{ user.id }}`;
+    }
+}
+</script>
+
 </body>
 </html>

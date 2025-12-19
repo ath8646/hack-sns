@@ -1,73 +1,350 @@
 <!DOCTYPE html>
 <html lang="ko">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>설정</title>
+    <title>마이페이지 - Secure Community</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    
     <style>
-        body {
-            background-color: #f0f2f5;
-            display: flex;
-            align-items: center;
-            min-height: 100vh;
+        :root { --primary-color: #0d6efd; --bg-color: #f4f6f9; --card-radius: 16px; }
+        body { background-color: var(--bg-color); font-family: 'Pretendard', sans-serif; color: #333; }
+        .settings-header { margin-bottom: 2rem; }
+        .settings-nav { background: white; border-radius: var(--card-radius); padding: 1rem; box-shadow: 0 4px 20px rgba(0,0,0,0.03); height: 100%; }
+        .nav-pills .nav-link { color: #555; font-weight: 600; padding: 12px 20px; border-radius: 12px; margin-bottom: 8px; transition: all 0.2s; display: flex; align-items: center; }
+        .nav-pills .nav-link i { margin-right: 12px; font-size: 1.1rem; width: 24px; text-align: center; }
+        .nav-pills .nav-link:hover { background-color: #f8f9fa; color: var(--primary-color); transform: translateX(3px); }
+        .nav-pills .nav-link.active { background-color: var(--primary-color); color: white; box-shadow: 0 4px 10px rgba(13, 110, 253, 0.3); }
+        .content-card { background: white; border-radius: var(--card-radius); padding: 2.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: none; height: 100%; }
+        .section-title { font-weight: 800; font-size: 1.5rem; margin-bottom: 0.5rem; color: #2c3e50; }
+        .section-desc { color: #6c757d; margin-bottom: 2rem; font-size: 0.95rem; }
+        .form-control { padding: 12px 15px; border-radius: 10px; border: 1px solid #dee2e6; background-color: #fcfcfc; }
+        .form-control:focus { background-color: #fff; border-color: var(--primary-color); box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.1); }
+        .btn-save { padding: 12px 0; border-radius: 10px; font-weight: 700; margin-top: 1rem; transition: all 0.3s; }
+        .alert-custom { border-radius: 12px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .gallery-item { border: 1px solid #eee; border-radius: 12px; padding: 15px; margin-bottom: 15px; transition: 0.2s; }
+        .gallery-item:hover { background-color: #f9f9f9; border-color: #ddd; }
+
+        /* 🔥 [추가] 화려한 체크 애니메이션 스타일 */
+        .success-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            z-index: 9999; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            opacity: 0; visibility: hidden; transition: opacity 0.5s;
         }
+        .success-overlay.active { opacity: 1; visibility: visible; }
+        
+        .checkmark-circle {
+            width: 150px; height: 150px; position: relative;
+            display: inline-block; vertical-align: top;
+        }
+        /* ... 기존 스타일 ... */
+
+        .checkmark-circle .background {
+            width: 150px; height: 150px;
+            border-radius: 50%; background: #28a745;
+            position: absolute; left: 0; top: 0;
+            /* 🔥 [수정됨] 기존 0.4s/0.9s -> 0.2s/0.4s로 단축 */
+            animation: scale .2s ease-in-out .4s both;
+        }
+        
+        .checkmark-circle .checkmark {
+            border-radius: 5px; position: absolute; z-index: 10;
+            stroke-width: 5; stroke: #fff; fill: none;
+            stroke-dasharray: 100; stroke-dashoffset: 100;
+            stroke-linecap: round; transform-origin: 50% 50%;
+        }
+        
+        .checkmark-circle .checkmark.draw { 
+            /* 🔥 [수정됨] 기존 1s/0.2s -> 0.45s/0.1s로 단축 */
+            animation: draw 0.45s cubic-bezier(0.65, 0, 0.45, 1) 0.1s forwards; 
+        }
+        
+        /* ... 나머지 스타일 ... */
+        
+        @keyframes draw { 100% { stroke-dashoffset: 0; } }
+        @keyframes scale { 0%, 100% { transform: none; } 50% { transform: scale3d(1.1, 1.1, 1); } }
     </style>
 </head>
-
 <body>
 
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-12 col-md-6 col-lg-5">
+<div id="successOverlay" class="success-overlay">
+    <div class="checkmark-circle">
+        <div class="background"></div>
+        <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+            <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+        </svg>
+    </div>
+    <h2 class="mt-4 fw-bold text-success animate-bounce">갤러리 생성 완료!</h2>
+    <p class="text-muted">멋진 커뮤니티를 만들어보세요 ✨</p>
+</div>
 
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h3 class="fw-bold m-0">⚙️ 계정 설정</h3>
-                    <a href="/" class="btn btn-outline-secondary btn-sm">홈으로</a>
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center settings-header">
+        <div>
+            <h2 class="fw-bold mb-1"><i class="fas fa-cog text-secondary me-2"></i>설정 및 관리</h2>
+            <p class="text-muted mb-0">계정 정보와 커뮤니티 활동을 관리하세요.</p>
+        </div>
+        <a href="{{ url_for('main.index') }}" class="btn btn-outline-dark rounded-pill px-4 fw-bold">
+            <i class="fas fa-arrow-left me-2"></i>메인으로
+        </a>
+    </div>
+
+    {% if msg %}
+    <div id="alertBox" class="alert alert-info alert-dismissible fade show alert-custom mb-4" role="alert" style="display: none;">
+        <i class="fas fa-info-circle me-2"></i> {{ msg }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+
+    <div class="row g-4">
+        <div class="col-lg-3">
+            <div class="settings-nav">
+                <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist">
+                    <button class="nav-link active" id="v-pills-security-tab" data-bs-toggle="pill" data-bs-target="#v-pills-security" type="button" role="tab">
+                        <i class="fas fa-shield-alt"></i> 보안 설정
+                    </button>
+                    <button class="nav-link" id="v-pills-gallery-tab" data-bs-toggle="pill" data-bs-target="#v-pills-gallery" type="button" role="tab">
+                        <i class="fas fa-plus-square"></i> 갤러리 생성
+                    </button>
+                    <button class="nav-link" id="v-pills-manage-tab" data-bs-toggle="pill" data-bs-target="#v-pills-manage" type="button" role="tab">
+                        <i class="fas fa-tasks"></i> 갤러리 관리
+                    </button>
                 </div>
+                <hr class="my-4 text-muted">
+                <div class="px-3 text-muted small">
+                    로그인 계정:<br>
+                    <strong class="text-dark">{{ session.get('username') }}</strong>
+                </div>
+            </div>
+        </div>
 
-                <div class="card shadow-sm border-0">
-                    <div class="card-header bg-white py-3">
-                        <h5 class="m-0 fw-bold text-primary">비밀번호 변경</h5>
-                    </div>
-                    <div class="card-body p-4">
-
-                        {% if msg %}
-                        <div
-                            class="alert {% if '성공' in msg or '완료' in msg %}alert-success{% else %}alert-danger{% endif %} text-center p-2 small mb-3">
-                            {{ msg }}
+        <div class="col-lg-9">
+            <div class="tab-content h-100" id="v-pills-tabContent">
+                
+                <div class="tab-pane fade show active h-100" id="v-pills-security" role="tabpanel">
+                    <div class="content-card">
+                        <div class="d-flex align-items-center mb-1">
+                            <h3 class="section-title">비밀번호 변경</h3>
                         </div>
-                        {% endif %}
-
-                        {% if session.get('user_id') == 0 %}
-                        <div class="text-center py-4 text-muted">
-                            <i class="fas fa-lock fa-3x mb-3"></i>
-                            <p>슈퍼 관리자(ADMIN) 계정은<br>보안상 비밀번호를 변경할 수 없습니다.</p>
-                        </div>
-                        {% else %}
-                        <form action="/settings" method="POST">
+                        <p class="section-desc">계정을 안전하게 보호하기 위해 주기적으로 비밀번호를 변경해주세요.</p>
+                        <form action="{{ url_for('auth.settings') }}" method="POST">
+                            <input type="hidden" name="action" value="change_pw">
                             <div class="mb-3">
-                                <label class="form-label small text-muted fw-bold">현재 비밀번호</label>
-                                <input type="password" name="current_password" class="form-control form-control-lg"
-                                    required>
+                                <label class="form-label fw-bold small">현재 비밀번호</label>
+                                <input type="password" name="current_password" class="form-control" required>
                             </div>
                             <div class="mb-4">
-                                <label class="form-label small text-muted fw-bold">새 비밀번호 (특수문자 포함)</label>
-                                <input type="password" name="new_password" class="form-control form-control-lg"
-                                    required>
+                                <label class="form-label fw-bold small">새로운 비밀번호</label>
+                                <input type="password" name="new_password" class="form-control" required>
                             </div>
-                            <button type="submit" class="btn btn-dark w-100 btn-lg fw-bold">변경사항 저장</button>
+                            <button type="submit" class="btn btn-dark btn-save w-100">
+                                <i class="fas fa-check me-2"></i>비밀번호 업데이트
+                            </button>
                         </form>
-                        {% endif %}
+                    </div>
+                </div>
 
+                <div class="tab-pane fade h-100" id="v-pills-gallery" role="tabpanel">
+                    <div class="content-card">
+                        <div class="d-flex align-items-center mb-1">
+                            <h3 class="section-title text-primary">나만의 갤러리 만들기</h3>
+                        </div>
+                        <p class="section-desc">새로운 주제의 커뮤니티를 직접 만들어 운영해보세요.</p>
+
+                        <form action="{{ url_for('main.create_gallery') }}" method="POST">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small">갤러리 이름 <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-quote-left"></i></span>
+                                    <input type="text" name="name" class="form-control border-start-0 ps-0" placeholder="예: 요리 갤러리, 축구 팬클럽" required>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small">갤러리 설명</label>
+                                <textarea name="description" class="form-control" rows="2" placeholder="갤러리 소개글"></textarea>
+                            </div>
+
+                            <div class="mb-4 p-3 bg-light rounded-3 border">
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="secureSwitch" name="is_secure">
+                                    <label class="form-check-label fw-bold" for="secureSwitch">🔒 보안 갤러리 설정</label>
+                                </div>
+                                <div id="passwordField" style="display: none;">
+                                    <label class="small text-muted mb-1">입장 비밀번호</label>
+                                    <input type="password" name="password" class="form-control form-control-sm" placeholder="비밀번호 입력">
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-save w-100">
+                                <i class="fas fa-plus-circle me-2"></i>갤러리 생성하기
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade h-100" id="v-pills-manage" role="tabpanel">
+                    <div class="content-card">
+                        <div class="d-flex align-items-center mb-1">
+                            <h3 class="section-title text-success">내 갤러리 관리</h3>
+                        </div>
+                        <p class="section-desc">내가 만든 갤러리를 관리하거나 삭제할 수 있습니다.</p>
+
+                        {% if my_galleries %}
+                            {% for g in my_galleries %}
+                            <div class="gallery-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="d-flex align-items-center mb-1">
+                                        <h5 class="fw-bold mb-0 me-2">{{ g.name }}</h5>
+                                        {% if g.is_secure %}
+                                        <span class="badge bg-warning text-dark"><i class="fas fa-lock"></i> 보안</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">일반</span>
+                                        {% endif %}
+                                    </div>
+                                    <p class="small text-muted mb-0">{{ g.description or '설명 없음' }}</p>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    {% if g.is_secure %}
+                                    <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#pwModal{{ g.id }}">
+                                        <i class="fas fa-key"></i> 비번변경
+                                    </button>
+                                    {% endif %}
+                                    <button class="btn btn-sm btn-outline-danger" onclick="openDeleteModal('{{ url_for('main.delete_gallery', gallery_id=g.id) }}', '{{ g.name }}')">
+                                        <i class="fas fa-trash"></i> 삭제
+                                    </button>
+                                </div>
+                            </div>
+
+                            {% if g.is_secure %}
+                            <div class="modal fade" id="pwModal{{ g.id }}" tabindex="-1">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">비밀번호 변경</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <form action="{{ url_for('main.update_gallery_pw') }}" method="POST">
+                                            <div class="modal-body">
+                                                <input type="hidden" name="gallery_id" value="{{ g.id }}">
+                                                <input type="password" name="new_password" class="form-control" placeholder="새로운 비밀번호" required>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="submit" class="btn btn-warning w-100">변경하기</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-5 text-muted">
+                                <i class="fas fa-folder-open fs-1 mb-3 opacity-50"></i>
+                                <p>생성한 갤러리가 없습니다.</p>
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
 
             </div>
         </div>
     </div>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</body>
+</div>
 
+<div class="modal fade" id="prettyDeleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+            <div class="modal-header border-0 bg-danger text-white justify-content-center py-3">
+                <h5 class="modal-title fw-bold"><i class="fas fa-exclamation-triangle"></i> 삭제 확인</h5>
+            </div>
+            <div class="modal-body text-center py-4 px-4">
+                <p class="mb-2 fs-5 fw-bold text-dark" id="delGalleryName"></p>
+                <p class="text-muted small mb-0">
+                    정말로 이 갤러리를 삭제하시겠습니까?<br>
+                    <span class="text-danger fw-bold">포함된 모든 게시글이 함께 삭제됩니다.</span>
+                </p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center pb-4">
+                <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">취소</button>
+                <a href="#" id="confirmDeleteBtn" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm">
+                    <i class="fas fa-trash-alt me-1"></i> 네, 삭제합니다
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // 1. 보안 갤러리 체크박스 로직
+    const secureSwitch = document.getElementById('secureSwitch');
+    const passwordField = document.getElementById('passwordField');
+    if(secureSwitch && passwordField){
+        secureSwitch.addEventListener('change', function() {
+            passwordField.style.display = this.checked ? 'block' : 'none';
+            passwordField.querySelector('input').required = this.checked;
+        });
+    }
+
+    // 2. 🔥 [핵심] URL 파라미터 처리 및 자동 탭 이동 로직
+    document.addEventListener("DOMContentLoaded", function() {
+        // URL에서 파라미터 가져오기
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetTab = urlParams.get('tab');
+        const msg = "{{ msg or '' }}";
+
+        // (1) 특정 탭으로 이동해야 한다면 이동
+        if (targetTab === 'manage') {
+            const manageTabBtn = document.querySelector('#v-pills-manage-tab');
+            const tabInstance = new bootstrap.Tab(manageTabBtn);
+            tabInstance.show();
+        } else if (targetTab === 'create') {
+            const createTabBtn = document.querySelector('#v-pills-gallery-tab');
+            const tabInstance = new bootstrap.Tab(createTabBtn);
+            tabInstance.show();
+        }
+
+        // (2) 메시지 애니메이션 및 알림 처리
+        if (msg) {
+            if (msg.includes("생성")) {
+                // 갤러리 생성 성공 시 화려한 애니메이션
+                const overlay = document.getElementById('successOverlay');
+                const checkmark = document.querySelector('.checkmark');
+                
+                overlay.classList.add('active');
+                checkmark.classList.add('draw');
+                
+                // 애니메이션 후 닫기
+                setTimeout(() => {
+                    overlay.classList.remove('active');
+                }, 1200); 
+            } else {
+                // 삭제, 수정 등 일반 메시지
+                const alertBox = document.getElementById('alertBox');
+                if(alertBox) alertBox.style.display = 'block';
+            }
+
+            // (3) 🔥 [중요] URL 청소 (새로고침 시 메시지 재발생 방지)
+            // 현재 주소에서 ?msg=...&tab=... 부분을 제거함
+            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            window.history.replaceState({path: newUrl}, '', newUrl);
+        }
+    });
+
+    // 3. 삭제 모달 띄우기 함수
+    const delModalEl = document.getElementById('prettyDeleteModal');
+    const delModal = new bootstrap.Modal(delModalEl);
+    
+    function openDeleteModal(deleteUrl, galleryName) {
+        document.getElementById('delGalleryName').innerText = galleryName;
+        document.getElementById('confirmDeleteBtn').href = deleteUrl;
+        delModal.show();
+    }
+</script>
+
+</body>
 </html>

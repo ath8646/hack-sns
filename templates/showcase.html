@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Neon Cube Room - Scaled</title>
+    <style>
+        :root {
+            --neon-red: #ff0000;
+            /* 기본 버튼 크기 (PC) */
+            --w: 300px;
+            --h: 120px;
+            --d: 50px; /* 두께의 절반 (Z축 이동 거리) */
+            --fz: 2rem;
+        }
+
+        /* 모바일용 크기 조정 */
+        @media (max-width: 768px) {
+            :root {
+                --w: 200px;
+                --h: 80px;
+                --d: 35px;
+                --fz: 1.2rem;
+            }
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+        }
+
+        .world {
+            width: 100vw;
+            height: 100vh;
+            perspective: 1200px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at center, #111 0%, #000 100%);
+        }
+
+        .room {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            transform: translateZ(-300px) rotateX(-10deg) rotateY(10deg);
+            transition: transform 0.5s ease;
+        }
+
+        .floor {
+            position: absolute;
+            width: 4000px; height: 4000px;
+            background: radial-gradient(transparent, #000), 
+                        repeating-linear-gradient(#111 0px, #111 1px, transparent 1px, transparent 50px),
+                        repeating-linear-gradient(90deg, #111 0px, #111 1px, transparent 1px, transparent 50px);
+            transform: rotateX(90deg) translateZ(-300px) translateX(-50%);
+            left: 50%;
+        }
+
+        .cube-wrapper {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
+
+        .cube {
+            width: var(--w);
+            height: var(--h);
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateX(-15deg) rotateY(-20deg);
+            transition: 0.5s;
+        }
+
+        .side {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Arial', sans-serif;
+            font-weight: 900;
+            font-size: var(--fz);
+            color: var(--neon-red);
+            background: rgba(20, 0, 0, 0.85);
+            border: 3px solid var(--neon-red);
+            box-shadow: 0 0 20px var(--neon-red), inset 0 0 15px var(--neon-red);
+            transition: 0.3s;
+            text-shadow: 0 0 10px var(--neon-red);
+            white-space: nowrap;
+
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        /* 6면 정밀 재설정 (변수 사용) */
+        .front  { width: var(--w); height: var(--h); transform: translateZ(var(--d)); }
+        .back   { width: var(--w); height: var(--h); transform: rotateY(180deg) translateZ(var(--d)); }
+        /* 옆면 두께는 var(--d) * 2 */
+        .right  { width: calc(var(--d) * 2); height: var(--h); transform: rotateY(90deg) translateZ(calc(var(--w) - var(--d))); }
+        .left   { width: calc(var(--d) * 2); height: var(--h); transform: rotateY(-90deg) translateZ(var(--d)); }
+        .top    { width: var(--w); height: calc(var(--d) * 2); transform: rotateX(90deg) translateZ(var(--d)); }
+        .bottom { width: var(--w); height: calc(var(--d) * 2); transform: rotateX(-90deg) translateZ(calc(var(--h) - var(--d))); }
+
+        .shadow-reflection {
+            position: absolute;
+            width: calc(var(--w) * 1.5);
+            height: calc(var(--h) * 1.5);
+            background: var(--neon-red);
+            filter: blur(60px);
+            opacity: 0.25;
+            transform: rotateX(90deg) translateZ(-150px) translateX(-15%);
+            transition: 0.3s;
+        }
+
+        /* Hover 효과 */
+        .cube-wrapper:hover .cube {
+            transform: rotateX(0deg) rotateY(0deg) scale(1.1);
+        }
+
+        .cube-wrapper:hover .side {
+            background: var(--neon-red);
+            color: white;
+            box-shadow: 0 0 60px var(--neon-red), 0 0 120px var(--neon-red);
+        }
+
+        .cube-wrapper:hover .shadow-reflection {
+            opacity: 0.8;
+            filter: blur(100px);
+        }
+
+        .cube-wrapper:active .cube {
+            transform: scale(0.9);
+        }
+    </style>
+</head>
+<body>
+
+<div class="world">
+    <div class="room">
+        <div class="wall floor"></div>
+        
+        <div class="cube-wrapper">
+            <div class="shadow-reflection"></div>
+            <div class="cube">
+                <div class="side front">쇼케이스 [ATH]</div>
+                <div class="side back"></div>
+                <div class="side right"></div>
+                <div class="side left"></div>
+                <div class="side top"></div>
+                <div class="side bottom"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    const cube =  document.querySelector('.cube');
+
+    cube.addEventListener('click', () => {
+        setTimeout(() => {
+            window.location.href = '/';
+        }, 200);
+    });
+
+</script>
+</body>
+</html>

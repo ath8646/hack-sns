@@ -21,15 +21,12 @@
         object-fit: contain;
         border-radius: 10px;
       }
-
       .post-content {
         font-size: 1.1rem;
         line-height: 1.7;
         word-break: break-all;
         white-space: pre-wrap;
       }
-
-      /* 등급 스타일 (Index와 동일하게 적용) */
       .grade-badge {
         font-size: 0.75rem;
         padding: 2px 6px;
@@ -40,21 +37,17 @@
         font-weight: bold;
         background-color: #0d6efd;
       }
-
       .grade-badge[data-grade="골드"] {
         background-color: #ffd700;
         color: #000;
         border: 1px solid #e0c200;
-        /* 🔥 아래 한 줄을 추가하면 노란색으로 빛납니다! */
         box-shadow: 0 0 8px rgba(255, 215, 0, 0.7);
       }
-
       .grade-badge[data-grade="다이아몬드"] {
         background-color: #00e1ff;
         color: #fff;
         box-shadow: 0 0 5px #00e1ff;
       }
-
       .grade-badge[data-grade="너 짱 최고"] {
         background: linear-gradient(
           45deg,
@@ -72,8 +65,6 @@
         animation: rainbow 3s linear infinite;
         text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
       }
-
-      /* 🔥 [NEW] 관리자 등급 스타일 🔥 */
       .grade-badge[data-grade="관리자"] {
         background-color: #dc3545;
         box-shadow: 0 0 8px rgba(220, 53, 69, 0.6);
@@ -84,7 +75,6 @@
       .grade-badge[data-grade="관리자"]::before {
         content: "👑 ";
       }
-
       @keyframes rainbow {
         0% {
           background-position: 0% 50%;
@@ -92,6 +82,22 @@
         100% {
           background-position: 100% 50%;
         }
+      }
+      .cmt-vote-btn {
+        border: none;
+        background: none;
+        padding: 0;
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-right: 12px;
+        cursor: pointer;
+        transition: 0.2s;
+      }
+      .cmt-vote-btn:hover {
+        color: #0d6efd;
+      }
+      .cmt-vote-btn i {
+        margin-right: 4px;
       }
     </style>
   </head>
@@ -120,14 +126,14 @@
               class="btn btn-warning btn-sm fw-bold w-100 w-lg-auto text-nowrap"
               ><i class="fas fa-cogs"></i> 관리자 페이지</a
             >{% endif %} {% if session.get('username') %}
-            <span class="text-white fw-bold me-2 mb-2 mb-lg-0 text-nowrap">
-              <i class="fas fa-user"></i> {{ session.get('username') }} {% if
+            <span class="text-white fw-bold me-2 mb-2 mb-lg-0 text-nowrap"
+              ><i class="fas fa-user"></i> {{ session.get('username') }} {% if
               session.get('is_admin') %}<span
                 class="grade-badge"
                 data-grade="관리자"
                 >관리자</span
-              >{% endif %}
-            </span>
+              >{% endif %}</span
+            >
             <a
               href="/settings"
               class="btn btn-outline-light btn-sm w-100 w-lg-auto text-nowrap"
@@ -168,8 +174,9 @@
           <div class="card shadow-sm mb-4 border-0">
             <div class="card-body p-3 p-md-4">
               <h3 class="fw-bold mb-3">{{ post.title }}</h3>
+
               <div
-                class="d-flex justify-content-between text-muted border-bottom pb-3 mb-3 small"
+                class="d-flex justify-content-between text-muted border-bottom pb-3 mb-4 small"
               >
                 <span>
                   <i class="fas fa-user"></i> {{ post.users.username }}
@@ -179,29 +186,114 @@
                     >{{ post.users.grade or '일반' }}</span
                   >
                 </span>
-                <span
-                  ><i class="fas fa-eye"></i> {{ post.view_count }} ·
+                <span>
+                  <i class="fas fa-eye"></i> {{ post.view_count }} ·
                   <span class="time-ago" data-date="{{ post.created_at }}"
                     >{{ post.created_at[:16] }}</span
-                  ></span
-                >
+                  >
+                </span>
               </div>
-              {% if post.image_url %}
-              <div class="mb-4 text-center bg-dark rounded p-2">
-                {% if '.mp4' in post.image_url or '.mov' in post.image_url or
-                '.webm' in post.image_url %}<video
-                  src="{{ post.image_url }}"
-                  class="detail-img"
-                  controls
-                  playsinline
-                ></video>
-                {% else %}<img
-                  src="{{ post.image_url }}"
-                  class="detail-img"
-                  alt="media"
-                />{% endif %}
+
+              {% if post.external_link %}
+              <div class="mb-4">
+                <div
+                  class="alert alert-info d-flex align-items-center shadow-sm border-0 py-2"
+                >
+                  <i class="fas fa-link me-2 text-primary"></i>
+                  <div class="text-truncate">
+                    <a
+                      href="{{ post.external_link }}"
+                      target="_blank"
+                      class="fw-bold text-decoration-none small"
+                    >
+                      {{ post.external_link }}
+                      <i
+                        class="fas fa-external-link-alt ms-1"
+                        style="font-size: 0.7rem"
+                      ></i>
+                    </a>
+                  </div>
+                </div>
+              </div>
+              {% endif %} {% set file_list = post.file_urls if post.file_urls
+              else ([post.image_url] if post.image_url else []) %} {% if
+              file_list %}
+              <div class="post-media-gallery mb-4 text-center">
+                {% for url in file_list %} {% set lower_url = url|lower %}
+
+                <div class="mb-3">
+                  {% if '.mp3' in lower_url or '.wav' in lower_url or '.ogg' in
+                  lower_url %}
+                  <div
+                    class="bg-dark p-2 rounded-pill d-flex align-items-center px-3 shadow-sm mx-auto"
+                    style="max-width: 500px"
+                  >
+                    <i class="fas fa-music text-warning me-2"></i>
+                    <audio
+                      src="{{ url }}"
+                      controls
+                      class="w-100"
+                      style="height: 30px"
+                    ></audio>
+                  </div>
+
+                  {% elif '.mp4' in lower_url or '.mov' in lower_url or '.webm'
+                  in lower_url or '.avi' in lower_url %}
+                  <video
+                    src="{{ url }}"
+                    class="detail-img shadow-sm border"
+                    controls
+                    playsinline
+                  ></video>
+
+                  {% elif '.jpg' in lower_url or '.jpeg' in lower_url or '.png'
+                  in lower_url or '.gif' in lower_url or '.webp' in lower_url %}
+                  <img
+                    src="{{ url }}"
+                    class="detail-img shadow-sm border"
+                    alt="이미지"
+                    loading="lazy"
+                  />
+
+                  {% else %}
+                  <div
+                    class="card shadow-sm mx-auto text-start"
+                    style="max-width: 600px;"
+                  >
+                    <div
+                      class="card-body d-flex align-items-center justify-content-between p-3"
+                    >
+                      <div class="d-flex align-items-center overflow-hidden">
+                        <div
+                          class="rounded-circle bg-light p-3 me-3 text-primary"
+                        >
+                          <i class="fas fa-file-download fa-lg"></i>
+                        </div>
+                        <div class="text-truncate">
+                          <h6 class="mb-0 text-dark text-truncate fw-bold">
+                            첨부파일 {{ loop.index }}
+                          </h6>
+                          <small class="text-muted text-truncate d-block"
+                            >{{ url.split('/')[-1] }}</small
+                          >
+                        </div>
+                      </div>
+                      <a
+                        href="{{ url }}"
+                        class="btn btn-outline-primary btn-sm fw-bold ms-3 text-nowrap"
+                        download
+                        target="_blank"
+                      >
+                        <i class="fas fa-download"></i> 다운로드
+                      </a>
+                    </div>
+                  </div>
+                  {% endif %}
+                </div>
+                {% endfor %}
               </div>
               {% endif %}
+
               <div class="post-content mt-3">{{ post.content }}</div>
 
               <div
@@ -225,7 +317,9 @@
                   <span id="count-dislike">{{ dislike_count }}</span>
                 </button>
               </div>
-              {% if session.get('user_id') == post.author_id %}
+
+              {% if session.get('user_id') == post.author_id or
+              session.get('is_admin') %}
               <div class="text-end mt-4">
                 <a
                   href="/delete/{{ post.id }}"
@@ -245,53 +339,118 @@
             <div id="comment-list" class="list-group list-group-flush">
               {% for parent in parents %}
               <div class="list-group-item bg-white p-3">
-                <div class="d-flex justify-content-between">
-                  <strong>
-                    {{ parent.users.username }}
-                    <span
-                      class="grade-badge"
-                      data-grade="{{ parent.users.grade or '일반' }}"
-                      >{{ parent.users.grade or '일반' }}</span
+                <div class="d-flex justify-content-between align-items-start">
+                  <div>
+                    <strong
+                      >{{ parent.users.username }}
+                      <span
+                        class="grade-badge"
+                        data-grade="{{ parent.users.grade or '일반' }}"
+                        >{{ parent.users.grade or '일반' }}</span
+                      ></strong
                     >
-                  </strong>
-                  <small
-                    class="text-muted time-ago"
-                    data-date="{{ parent.created_at }}"
-                    >{{ parent.created_at[:10] }}</small
+                    <small
+                      class="text-muted time-ago ms-1"
+                      data-date="{{ parent.created_at }}"
+                      >{{ parent.created_at[:10] }}</small
+                    >
+                  </div>
+                  {% if session.get('user_id') == parent.user_id or
+                  session.get('is_admin') %}
+                  <button
+                    class="btn btn-sm text-danger p-0 border-0"
+                    onclick="deleteComment({{ parent.id }})"
                   >
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+                  {% endif %}
                 </div>
                 <p class="mb-2 mt-1">{{ parent.content }}</p>
-                {% if session.get('user_id') %}<button
-                  class="btn btn-sm btn-link text-decoration-none p-0 mb-2"
-                  data-bs-toggle="collapse"
-                  data-bs-target="#replyForm{{ parent.id }}"
-                >
-                  ↪ 답글</button
-                >{% endif %} {% for reply in replies %} {% if reply.parent_id ==
-                parent.id %}
+                <div class="d-flex align-items-center mb-2">
+                  <button
+                    class="cmt-vote-btn"
+                    onclick="voteComment({{ parent.id }}, 'like')"
+                  >
+                    <i class="far fa-thumbs-up"></i>
+                    <span id="cl-{{ parent.id }}"
+                      >{{ parent.like_count or 0 }}</span
+                    >
+                  </button>
+                  <button
+                    class="cmt-vote-btn"
+                    onclick="voteComment({{ parent.id }}, 'dislike')"
+                  >
+                    <i class="far fa-thumbs-down"></i>
+                    <span id="cd-{{ parent.id }}"
+                      >{{ parent.dislike_count or 0 }}</span
+                    >
+                  </button>
+                  {% if session.get('user_id') %}
+                  <button
+                    class="btn btn-sm btn-link text-decoration-none p-0 text-muted"
+                    style="font-size: 0.85rem"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#replyForm{{ parent.id }}"
+                  >
+                    ↪ 답글달기
+                  </button>
+                  {% endif %}
+                </div>
+
+                {% for reply in replies %} {% if reply.parent_id == parent.id %}
                 <div
                   class="d-flex mt-2 ms-3 ms-md-4 p-2 bg-light rounded border-start border-3 border-primary"
                 >
                   <div class="w-100">
-                    <div class="d-flex justify-content-between">
-                      <small class="fw-bold text-primary">
-                        {{ reply.users.username }}
+                    <div
+                      class="d-flex justify-content-between align-items-start"
+                    >
+                      <small class="fw-bold text-primary"
+                        >{{ reply.users.username }}
                         <span
                           class="grade-badge"
                           data-grade="{{ reply.users.grade or '일반' }}"
                           >{{ reply.users.grade or '일반' }}</span
-                        >
-                      </small>
-                      <small
-                        class="text-muted time-ago"
-                        data-date="{{ reply.created_at }}"
-                        >{{ reply.created_at[:10] }}</small
+                        ></small
                       >
+                      <div class="d-flex gap-2">
+                        <small
+                          class="text-muted time-ago"
+                          data-date="{{ reply.created_at }}"
+                          >{{ reply.created_at[:10] }}</small
+                        >
+                        {% if session.get('user_id') == reply.user_id or
+                        session.get('is_admin') %}
+                        <button
+                          class="text-danger p-0 border-0 bg-transparent"
+                          onclick="deleteComment({{ reply.id }})"
+                        >
+                          <i class="fas fa-times"></i>
+                        </button>
+                        {% endif %}
+                      </div>
                     </div>
-                    <p class="mb-0 small">{{ reply.content }}</p>
+                    <p class="mb-1 small">{{ reply.content }}</p>
+                    <div class="d-flex align-items-center">
+                      <button
+                        class="cmt-vote-btn small"
+                        onclick="voteComment({{ reply.id }}, 'like')"
+                      >
+                        <i class="far fa-thumbs-up"></i>
+                        <span>{{ reply.like_count or 0 }}</span>
+                      </button>
+                      <button
+                        class="cmt-vote-btn small"
+                        onclick="voteComment({{ reply.id }}, 'dislike')"
+                      >
+                        <i class="far fa-thumbs-down"></i>
+                        <span>{{ reply.dislike_count or 0 }}</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
                 {% endif %} {% endfor %}
+
                 <div class="collapse mt-2" id="replyForm{{ parent.id }}">
                   <form
                     action="/comment/{{ post.id }}"
@@ -345,6 +504,46 @@
         </div>
       </div>
     </div>
+
+    <div
+      class="modal fade"
+      id="cmtDeleteModal"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header bg-danger text-white border-0">
+            <h6 class="modal-title fw-bold">댓글 삭제</h6>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body text-center py-4">
+            <p class="mb-0 fw-bold">정말 이 댓글을 지울까요?</p>
+          </div>
+          <div class="modal-footer border-0 pt-0 justify-content-center">
+            <button
+              type="button"
+              class="btn btn-light btn-sm px-3"
+              data-bs-dismiss="modal"
+            >
+              취소
+            </button>
+            <button
+              type="button"
+              class="btn btn-danger btn-sm px-3"
+              id="confirmCmtDelBtn"
+            >
+              삭제하기
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
       const SUPABASE_URL = "https://porctgadcosjzgpkxiqw.supabase.co";
@@ -352,6 +551,80 @@
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvcmN0Z2FkY29zanpncGt4aXF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwMzc4MjYsImV4cCI6MjA4MTYxMzgyNn0.QmB0BnyLAYY0Rt3-fffExHQt4BGgWWr7USc5V9qbA2c";
       const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       const postId = "{{ post.id }}";
+
+      // 1. 댓글 삭제 모달 제어용 변수
+      let targetCmtId = null;
+      const cmtDeleteModal = new bootstrap.Modal(
+        document.getElementById("cmtDeleteModal")
+      );
+
+      // 1. 댓글 삭제
+      function deleteComment(cmtId) {
+        targetCmtId = cmtId;
+        cmtDeleteModal.show();
+      }
+
+      document.getElementById("confirmCmtDelBtn").onclick = function () {
+        fetch(`/comment/delete/${targetCmtId}`).then((r) => {
+          console.log("삭제 응답 코드:", r.status); // 🔍 확인용
+          if (r.status === 200) {
+            cmtDeleteModal.hide();
+            refreshPage();
+          } else {
+            r.text().then((msg) => alert("실패: " + msg));
+          }
+        });
+      };
+
+      // 2. 댓글 투표
+      function voteComment(cmtId, type) {
+        fetch(`/comment/vote/${cmtId}/${type}`)
+          .then((r) => {
+            if (r.status === 401) {
+              alert("로그인이 필요합니다.");
+            } else if (r.status === 200) {
+              // ✅ 성공 시 화면을 즉시 갱신해서 숫자를 바꿔줍니다.
+              refreshPage();
+            } else {
+              alert("투표 중 서버 오류가 발생했습니다.");
+            }
+          })
+          .catch((e) => console.error("투표 에러:", e));
+      }
+
+      // 게시물 투표 함수 (기존 로직 보강)
+      function sendVote(type) {
+        fetch(`/vote/${postId}/${type}`)
+          .then((r) => r.json())
+          .then((d) => {
+            if (d.error) {
+              alert(d.error);
+            } else {
+              // 버튼 디자인과 숫자 업데이트
+              document.getElementById("count-like").innerText = d.like_count;
+              document.getElementById("count-dislike").innerText =
+                d.dislike_count;
+              document.getElementById("btn-like").className =
+                "btn rounded-pill " +
+                (d.my_vote === "like" ? "btn-primary" : "btn-outline-primary");
+              document.getElementById("btn-dislike").className =
+                "btn rounded-pill " +
+                (d.my_vote === "dislike" ? "btn-danger" : "btn-outline-danger");
+            }
+          });
+      }
+
+      function updateButtons(l, d, v) {
+        document.getElementById("count-like").innerText = l;
+        document.getElementById("count-dislike").innerText = d;
+        const bl = document.getElementById("btn-like"),
+          bd = document.getElementById("btn-dislike");
+        const bc = "btn rounded-pill ";
+        bl.className =
+          bc + (v === "like" ? "btn-primary" : "btn-outline-primary");
+        bd.className =
+          bc + (v === "dislike" ? "btn-danger" : "btn-outline-danger");
+      }
 
       function updateTimeAgo() {
         const els = document.querySelectorAll(".time-ago");
@@ -372,31 +645,16 @@
       }
       updateTimeAgo();
 
-      function sendVote(type) {
-        fetch(`/vote/${postId}/${type}`)
-          .then((r) =>
-            r.status === 401
-              ? (alert("로그인 필요"), (window.location = "/login"))
-              : r.json()
-          )
-          .then((d) => {
-            if (d) updateButtons(d.like_count, d.dislike_count, d.my_vote);
-          });
-      }
-      function updateButtons(l, d, v) {
-        document.getElementById("count-like").innerText = l;
-        document.getElementById("count-dislike").innerText = d;
-        const bl = document.getElementById("btn-like"),
-          bd = document.getElementById("btn-dislike");
-        const bc = "btn rounded-pill ";
-        bl.className =
-          bc + (v === "like" ? "btn-primary" : "btn-outline-primary");
-        bd.className =
-          bc + (v === "dislike" ? "btn-danger" : "btn-outline-danger");
-      }
-
+      // 👇 이 코드로 교체하세요 (맨 아래 스크립트 부분)
       const channel = _supabase
         .channel("detail-updates")
+        // 1. 댓글 좋아요 테이블 감지 (추가됨!)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "comment_likes" },
+          () => refreshPage()
+        )
+        // 2. 댓글 테이블 감지
         .on(
           "postgres_changes",
           {
@@ -407,6 +665,7 @@
           },
           () => refreshPage()
         )
+        // 3. 게시글 좋아요 테이블 감지
         .on(
           "postgres_changes",
           {
@@ -417,6 +676,7 @@
           },
           () => refreshPage()
         )
+        // 4. 게시글 수정 감지
         .on(
           "postgres_changes",
           {
@@ -427,6 +687,7 @@
           },
           () => refreshPage()
         )
+        // 5. 유저 정보 변경 감지
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "users" },

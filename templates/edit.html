@@ -4,14 +4,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>글 수정</title>
+    <title>글 수정 - Secure Community</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <style>
         body {
-            background-color: #f0f2f5;
+            background-color: #f8f9fa;
             min-height: 100vh;
             display: flex;
             align-items: center;
+        }
+        .card {
+            border-radius: 15px;
+        }
+        .input-group-text {
+            background-color: #fff;
+        }
+        /* 기존 파일 썸네일 스타일 */
+        .file-preview-item {
+            position: relative;
+            height: 100px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #dee2e6;
+            background: #fff;
+        }
+        .file-preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .file-delete-btn {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 22px;
+            height: 22px;
+            padding: 0;
+            font-size: 14px;
+            line-height: 1;
+            border-radius: 50%;
+            z-index: 10;
+            background: rgba(220, 53, 69, 0.9);
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .file-delete-btn:hover {
+            background: #dc3545;
         }
     </style>
 </head>
@@ -19,26 +59,109 @@
 <body>
     <div class="container py-5">
         <div class="row justify-content-center">
-            <div class="col-12 col-md-8 col-lg-6">
+            <div class="col-12 col-md-8 col-lg-7">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h3 class="fw-bold m-0">✏️ 글 수정</h3><a href="/" class="btn btn-outline-secondary btn-sm">취소</a>
+                    <h3 class="fw-bold m-0 text-dark">✏️ 글 수정</h3>
+                    <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3">취소</a>
                 </div>
+
                 <div class="card shadow-sm border-0">
                     <div class="card-body p-4">
-                        <form action="/edit/{{ post.id }}" method="POST">
-                            <div class="mb-3"><label class="fw-bold small text-muted">제목</label><input type="text"
-                                    name="title" class="form-control form-control-lg" value="{{ post.title }}" required>
+                        <form action="/edit/{{ post.id }}" method="POST" enctype="multipart/form-data" onsubmit="disableButton(this)">
+                            
+                            <div class="mb-3">
+                                <label class="fw-bold small text-muted mb-1">제목</label>
+                                <input type="text" name="title" class="form-control form-control-lg shadow-sm" 
+                                       placeholder="제목을 입력하세요" value="{{ post.title }}" required>
                             </div>
-                            <div class="mb-4"><label class="fw-bold small text-muted">내용</label><textarea name="content"
-                                    class="form-control form-control-lg" rows="8" required>{{ post.content }}</textarea>
+
+                            <div class="mb-3">
+                                <label class="fw-bold small text-muted mb-1">관련 링크</label>
+                                <div class="input-group shadow-sm">
+                                    <span class="input-group-text border-end-0 text-muted">
+                                        <i class="fas fa-link"></i>
+                                    </span>
+                                    <input type="url" name="external_link" class="form-control border-start-0 ps-0" 
+                                           placeholder="https:// (관련 링크 선택)" value="{{ post.external_link or '' }}">
+                                </div>
                             </div>
-                            <button type="submit" class="btn btn-primary w-100 btn-lg fw-bold">수정 완료</button>
+
+                            <div class="mb-3">
+                                <label class="fw-bold small text-muted mb-1">내용</label>
+                                <textarea name="content" class="form-control shadow-sm" rows="8" 
+                                          placeholder="내용을 입력하세요" required>{{ post.content }}</textarea>
+                            </div>
+
+                            {% if post.file_urls %}
+                            <div class="mb-4">
+                                <label class="fw-bold small text-muted mb-2">
+                                    <i class="fas fa-images"></i> 현재 등록된 파일 (삭제하려면 X 클릭)
+                                </label>
+                                <div class="row g-2">
+                                    {% for url in post.file_urls %}
+                                    <div class="col-4 col-md-3 existing-file-block">
+                                        <input type="hidden" name="keep_files" value="{{ url }}">
+                                        
+                                        <div class="file-preview-item shadow-sm">
+                                            {% if '.mp3' in url or '.wav' in url or '.ogg' in url %}
+                                                <div class="h-100 d-flex align-items-center justify-content-center bg-light">
+                                                    <i class="fas fa-music fa-2x text-warning"></i>
+                                                </div>
+                                            {% elif '.mp4' in url or '.mov' in url or '.webm' in url %}
+                                                <div class="h-100 d-flex align-items-center justify-content-center bg-light">
+                                                    <i class="fas fa-video fa-2x text-info"></i>
+                                                </div>
+                                            {% else %}
+                                                <img src="{{ url }}" alt="preview">
+                                            {% endif %}
+                                            
+                                            <button type="button" class="file-delete-btn" onclick="removeFile(this)">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <div class="mb-4">
+                                <label class="fw-bold small text-muted mb-1">
+                                    <i class="fas fa-plus-circle text-primary"></i> 새 파일 추가
+                                </label>
+                                <input type="file" name="file" class="form-control shadow-sm" 
+                                       accept="image/*, video/*, audio/*" multiple>
+                                <div class="form-text small text-muted">※ 여러 개 선택하여 추가할 수 있습니다.</div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100 btn-lg fw-bold rounded-pill shadow-sm py-3">
+                                <i class="fas fa-save me-1"></i> 수정 사항 저장하기
+                            </button>
                         </form>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <script>
+        // 기존 파일 아이템을 화면에서 제거하는 기능
+        function removeFile(btn) {
+            if(confirm("이 파일을 게시물에서 삭제할까요?")) {
+                // 부모 요소(existing-file-block)를 찾아 삭제합니다.
+                // 그러면 그 안의 <input type="hidden" name="keep_files"> 도 같이 사라져서 서버로 전달되지 않습니다.
+                const item = btn.closest('.existing-file-block');
+                item.remove();
+            }
+        }
+
+        // 전송 버튼 중복 클릭 방지
+        function disableButton(form) {
+            const btn = form.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 저장 중...';
+        }
+    </script>
 </body>
 
 </html>
